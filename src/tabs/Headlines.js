@@ -414,9 +414,16 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
               : activeTab === 'r52' ? (rollingMeta ? `52 weeks ending ${formatPeriodDateFull(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDateFull(rollingMeta.prior_to)}` : 'Loading the weekly series…')
               : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
             <span className="text-gray-300" aria-hidden>·</span>
-            {activeTab === 'r52'
-              ? <span className="text-gray-400">Recent weeks are still being revised upward, so this slightly understates the latest year.</span>
-              : <ProvisionalNote year={endYear} contextData={contextData} />}
+            {/* The provisional note belongs on every view — it carries the measured revision
+                figures in its tooltip and the link explaining them. The 52-week window adds a
+                consequence the other views don't have, so it says both. */}
+            <ProvisionalNote year={endYear} contextData={contextData} />
+            {activeTab === 'r52' && (
+              <>
+                <span className="text-gray-300" aria-hidden>·</span>
+                <span className="text-gray-400">Its newest weeks are still accruing, so the last 52 weeks read slightly low against the 52 before them.</span>
+              </>
+            )}
           </div>
         </div>
         <LocatorMap activeGeo={activeGeo} onSelectGeo={onSelectGeo} />

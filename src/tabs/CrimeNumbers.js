@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import crimeHistory from '../data/crime_history.json';
 import {
   VC, VOLATILITY_THRESHOLD, offenseClass, expandCrimeTitle, dirPct, signedCount,
-  getHistoricalContext, ContextSparkline, Download, ProvisionalNote,
+  getHistoricalContext, ContextSparkline, Download, ProvisionalNote, formatPeriodDateFull,
 } from '../shared';
 
 /* ------------------------------------------------------------------ */
@@ -148,9 +148,18 @@ export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouri
       <div className="mt-5 text-[11px] font-serif italic text-gray-500 border-t border-gray-100 pt-3">
         * Base sample under 30 (statistically volatile).
         <span className="mx-1.5 not-italic text-gray-300" aria-hidden>·</span>
-        {activeTab === 'r52'
-          ? <span className="not-italic text-gray-400">{rollingMeta ? `52 weeks ending ${rollingMeta.current_to}, against the 52 before them. ` : ''}Recent weeks are still being revised upward, so the latest window is slightly understated.</span>
-          : <ProvisionalNote year={currentYear} contextData={contextData} className="not-italic" />}
+        {activeTab === 'r52' && rollingMeta && (
+          <span className="not-italic text-gray-400">{`52 weeks ending ${formatPeriodDateFull(rollingMeta.current_to) || rollingMeta.current_to}, against the 52 before them. `}</span>
+        )}
+        {/* Shown on every view, 52-week included — the tooltip carries the measured revision
+            figures and the link that explains them. */}
+        <ProvisionalNote year={currentYear} contextData={contextData} className="not-italic" />
+        {activeTab === 'r52' && (
+          <>
+            <span className="mx-1.5 not-italic text-gray-300" aria-hidden>·</span>
+            <span className="not-italic text-gray-400">Its newest weeks are still accruing, so the latest window reads slightly low.</span>
+          </>
+        )}
       </div>
     </div>
   );
