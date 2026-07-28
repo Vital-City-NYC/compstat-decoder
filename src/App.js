@@ -32,7 +32,10 @@ const TAB_KEYS = ['headlines', ...MAIN_TABS.map(t => t[0])];
 // Tabs where the global geography selector does nothing (they're citywide-only or bring
 // their own selector), and tabs that are year-to-date only (weekly counts unavailable/too small).
 const GEO_INERT_TABS = ['transit', 'precincts', 'council'];
-const YTD_ONLY_TABS = ['transit', 'council'];
+// Weekly counts are too small to read at these geographies. The 52-week window is not —
+// it pools a year, so it is available wherever year-to-date is, except on transit.
+const NO_WEEKLY_TABS = ['transit', 'council'];
+const NO_ROLLING_TABS = ['transit'];
 
 /* ------------------------------------------------------------------ */
 /* MAIN APP — TABBED DASHBOARD                                        */
@@ -101,7 +104,8 @@ export default function App() {
 
   // Weekly counts don't apply on the transit and council tabs — snap back to YTD there.
   useEffect(() => {
-    if (YTD_ONLY_TABS.includes(mainTab) && activeTab !== 'ytd') setActiveTab('ytd');
+    if (NO_WEEKLY_TABS.includes(mainTab) && activeTab === 'wtd') setActiveTab('ytd');
+    if (NO_ROLLING_TABS.includes(mainTab) && activeTab === 'r52') setActiveTab('ytd');
   }, [mainTab, activeTab]);
 
   // Generic CSV download helper. Takes a filename and an array of arrays (header + rows).
@@ -353,7 +357,8 @@ export default function App() {
   const isTouristPrecinct = TOURIST_PRECINCTS.includes(activeGeo);
   const activePop = GEO_POPULATIONS[activeGeo] || (activeGeo === 'citywide' ? CITYWIDE_POPULATION : null);
   const geoInert = GEO_INERT_TABS.includes(mainTab); // geography selector does nothing here
-  const ytdOnly = YTD_ONLY_TABS.includes(mainTab);   // weekly unavailable here
+  const weeklyOff = NO_WEEKLY_TABS.includes(mainTab);    // weekly counts too small here
+  const rollingOff = NO_ROLLING_TABS.includes(mainTab);  // no weekly series for this view
 
   // Compute per-100k rates for all precincts (for map + ranking bars)
   const precinctRates = useMemo(() => {
@@ -487,9 +492,9 @@ export default function App() {
             </div>
             <div className="flex items-center gap-2.5">
             <div className="flex border border-gray-300 rounded overflow-hidden shrink-0">
-              <button onClick={() => !ytdOnly && setActiveTab('wtd')} disabled={ytdOnly} aria-pressed={activeTab === 'wtd'} title={ytdOnly ? 'Weekly data is not available on this view' : 'This CompStat week vs the same week last year'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${ytdOnly ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'wtd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Wk</button>
+              <button onClick={() => !weeklyOff && setActiveTab('wtd')} disabled={weeklyOff} aria-pressed={activeTab === 'wtd'} title={weeklyOff ? 'Weekly data is not available on this view' : 'This CompStat week vs the same week last year'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${weeklyOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'wtd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Wk</button>
               <button onClick={() => setActiveTab('ytd')} aria-pressed={activeTab === 'ytd'} title="Year-to-date vs the same period last year" className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${activeTab === 'ytd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>YTD</button>
-              <button onClick={() => !ytdOnly && setActiveTab('r52')} disabled={ytdOnly} aria-pressed={activeTab === 'r52'} title={ytdOnly ? 'The rolling window is not available on this view' : 'The last 52 weeks vs the 52 weeks before them — a window that never changes length'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${ytdOnly ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'r52' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>52wk</button>
+              <button onClick={() => !rollingOff && setActiveTab('r52')} disabled={rollingOff} aria-pressed={activeTab === 'r52'} title={rollingOff ? 'The rolling window is not available on this view' : 'The last 52 weeks vs the 52 weeks before them — a window that never changes length'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${rollingOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'r52' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>52WK</button>
             </div>
             <button onClick={() => setAppView('historic')} title="The 30-year transformation of NYC crime" className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
               <Activity size={12} /> 30-Yr
@@ -544,7 +549,7 @@ export default function App() {
         )}
         {mainTab === 'council' && (
           <CouncilDistricts
-            rawData={rawData}
+            rawData={effectiveRaw}
             activeTab={activeTab}
             districtNum={districtNum}
             setDistrictNum={setDistrictNum}

@@ -180,8 +180,8 @@ const renderFinding = (text) => {
 /* For each of the 51 Council districts: which NYPD precincts serve    */
 /* it (with each precinct's share of the district's area, computed     */
 /* from official boundary files) and how crime is trending in each,    */
-/* against the citywide average. Always year-to-date — weekly counts   */
-/* are too small at this geography to be meaningful.                   */
+/* against the citywide average. Year-to-date or rolling 52-week —     */
+/* weekly counts are too small at this geography to be meaningful.     */
 /* Modeled on the D15 precinct-overlap map.                            */
 /* ------------------------------------------------------------------ */
 
@@ -190,8 +190,9 @@ const PRECINCT_COLORS = ['#aac4e4', '#f9c99b', '#f2a79e', '#b5d9a8', '#cfcbe6', 
 
 const MIN_LABEL_SHARE = 0.04; // don't label slivers on the map; the table has them all
 
-// This tab is always year-to-date; district geographies are too small for weekly counts.
-// Sum a set of major-felony offenses (YTD) over one CompStat geography record.
+// District geographies are too small for weekly counts, so this tab reads the year_to_date
+// node — which in the 52-week view holds the rolling window (see buildRollingData).
+// Sum a set of major-felony offenses over one CompStat geography record.
 const tallyGeo = (geoRecord, names) => {
   if (!geoRecord?.seven_major_felonies) return { cur: null, pri: null, pct: null, diff: null };
   let cur = 0, pri = 0;
@@ -447,7 +448,9 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
   // How much this district's weighted year-to-date figure has itself moved across the
   // snapshot archive. Districts run steadier than their precincts — pooling several
   // precincts enlarges the sample — but the range is still worth stating.
-  const districtVolatility = ytdVolatility(contextData, String(districtNum), 'council');
+  const districtVolatility = activeTab === 'r52'
+    ? null
+    : ytdVolatility(contextData, String(districtNum), 'council');
 
   // Build the auto-generated top-line findings as bolded prose bullets.
   const findings = useMemo(() => {
@@ -552,7 +555,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
             districts, so the content below never bounces as precinct counts change. */}
         <div className="lg:min-h-[600px]">
           <div className="flex items-baseline justify-between gap-3 mb-3">
-            <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-500 leading-tight">Major felonies by precinct<br /><span className="text-gray-400">Year-on-year change (YTD)</span></h4>
+            <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-500 leading-tight">Major felonies by precinct<br /><span className="text-gray-400">{activeTab === 'r52' ? 'Change over the last 52 weeks' : 'Year-on-year change (YTD)'}</span></h4>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={() => {
@@ -644,7 +647,12 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
 
           {activeTab === 'wtd' && (
             <p className="mt-3 text-[11px] font-serif italic text-gray-500 leading-snug">
-              Council-district figures are always year-to-date — weekly counts are too small at this geography to read reliably.
+              Council-district figures are year-to-date or rolling 52-week — weekly counts are too small at this geography to read reliably.
+            </p>
+          )}
+          {activeTab === 'r52' && (
+            <p className="mt-3 text-[11px] font-serif italic text-gray-500 leading-snug">
+              The last 52 weeks compared with the 52 weeks before them. Recent weeks are still being revised upward, so the latest window is slightly understated.
             </p>
           )}
         </div>
@@ -703,7 +711,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
             </p>
           </div>
           <div className="flex flex-col min-h-0" style={{ fontFamily: 'system-ui, sans-serif' }}>
-            <div className="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500 mb-2 leading-tight flex-shrink-0">Major felonies by precinct<br />Year-on-year change (YTD)</div>
+            <div className="text-[9px] font-black uppercase tracking-[0.12em] text-gray-500 mb-2 leading-tight flex-shrink-0">Major felonies by precinct<br />{activeTab === 'r52' ? 'Change over the last 52 weeks' : 'Year-on-year change (YTD)'}</div>
             <table className="w-full border-collapse flex-1" style={{ height: '100%' }}>
               <thead>
                 <tr className="text-[7px] font-black uppercase tracking-wide text-gray-400 border-b-2 border-black">

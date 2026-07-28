@@ -412,10 +412,10 @@ export const volatilitySentence = (v, noun = 'precinct') => {
   const measure = noun === 'district' ? 'year-to-date weighted average' : 'year-to-date change';
   // Too few weeks into a new year to quote a range — say why the number is unsteady
   // without inventing figures.
-  if (!v || v.insufficient || v.min == null) {
-    return `Year-to-date has only just restarted for the year, so it covers a handful of weeks and a small number of incidents can swing the percentage hard. It steadies as the year fills in.`;
-  }
-  return `Since ${formatPeriodDateFull(v.from) || v.from}, this ${noun}'s ${measure} has ranged from ${signedPct(v.min)} to ${signedPct(v.max)}. Early in the year the window covers only a few weeks, so a handful of incidents swings the percentage hard; it steadies as the year fills in.`;
+  const why = "Early in the calendar year, this measure covers only a few weeks, so a handful of incidents swings the percentage hard; it steadies as the year advances.";
+  // Too few weeks into a new year to quote a range — the explanation still stands alone.
+  if (!v || v.insufficient || v.min == null) return why;
+  return `${why} Since ${formatPeriodDateFull(v.from) || v.from}, this ${noun}'s ${measure} has ranged from ${signedPct(v.min)} to ${signedPct(v.max)}.`;
 };
 
 /* ------------------------------------------------------------------ */

@@ -25,10 +25,10 @@ export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouri
   const currentYear = parsedData.period?.week_end ? new Date(parsedData.period.week_end).getFullYear() : new Date().getFullYear();
   const isCitywide = activeGeo === 'citywide';
   const colYear = activeTab === 'ytd' ? `${currentYear} YTD`
-    : activeTab === 'r52' ? 'Last 52 wks'
+    : activeTab === 'r52' ? 'Last 52 weeks'
     : `${currentYear} this wk`;
   const colPrior = activeTab === 'ytd' ? `${currentYear - 1} YTD`
-    : activeTab === 'r52' ? 'prior 52 wks'
+    : activeTab === 'r52' ? 'prior 52 weeks'
     : `${currentYear - 1} same wk`;
 
   const rows = useMemo(() => {

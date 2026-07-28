@@ -6,7 +6,7 @@ import {
   CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
-  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDate, staleGeo,
+  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDate, formatPeriodDateFull, staleGeo,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
   Download,
 } from '../shared';
@@ -219,7 +219,10 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
   const isCitywide = activeGeo === 'citywide';
   const isBorough = PATROL_BOROUGH_NAMES.includes(activeGeo);
   const isPrecinct = activeGeo.includes('Precinct');
-  const periodWord = activeTab === 'ytd' ? 'YTD' : activeTab === 'r52' ? 'last 52 wks' : 'this week';
+  const periodWord = activeTab === 'ytd' ? 'YTD' : activeTab === 'r52' ? 'in the last 52 weeks compared to the year before' : 'this week';
+  // The rolling window compares two 52-week spans, neither of which is "last year", so
+  // every bullet that names the baseline has to say which spans it means.
+  const vsPriorPeriod = activeTab === 'r52' ? 'in the last 52 weeks than the year before' : 'than last year';
   const hereWord = isCitywide ? 'citywide' : isBorough ? `across ${activeGeo}` : 'here';
   const bullets = [];
 
@@ -239,7 +242,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
     const dCrime = expandCrime(driver.name);
     const dAbs = Math.abs(driver.diff).toLocaleString();
     if (absShare <= 100) {
-      bullets.push(`**The biggest driver of the ${direction} ${hereWord} is ${dCrime}:** it accounts for ${Math.round(absShare)}% of the net ${direction} in the major-crime index (${dAbs} ${driver.diff < 0 ? 'fewer' : 'more'} cases than last year).`);
+      bullets.push(`**The biggest driver of the ${direction} ${hereWord} is ${dCrime}:** it accounts for ${Math.round(absShare)}% of the net ${direction} in the major-crime index (${dAbs} ${driver.diff < 0 ? 'fewer' : 'more'} cases ${vsPriorPeriod}).`);
     } else {
       bullets.push(`**The biggest mover ${hereWord} is ${dCrime}:** it ${driver.diff < 0 ? 'fell' : 'rose'} by ${dAbs} cases — more than the index's net ${direction} of ${Math.abs(totals.diff).toLocaleString()}, because other offenses moved the opposite way over the same period.`);
     }
@@ -317,7 +320,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
 
   const endYear = period?.week_end ? new Date(period.week_end).getFullYear() : new Date().getFullYear();
   const yy = (y) => `’${String(y).slice(-2)}`;
-  const periodWord = activeTab === 'ytd' ? 'YTD' : activeTab === 'r52' ? 'last 52 wks' : 'this week';
+  const periodWord = activeTab === 'ytd' ? 'YTD' : activeTab === 'r52' ? 'last 52 weeks' : 'this week';
 
   const statLines = [
     { label: 'Major crime index', sub: 'All 7 major felonies', cur: totals.mCur, pri: totals.mPri, pct: totals.mPct },
@@ -389,18 +392,18 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
                   {dirPct(s.pct)}
                 </span>
                 <span className="text-[12px] sm:text-[13px] text-gray-600 tabular-nums basis-full sm:basis-auto">
-                  {s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the prior 52 wks' : <>{yy(endYear - 1)} {periodWord}</>}
+                  {s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the prior 52 weeks' : <>{yy(endYear - 1)} {periodWord}</>}
                   <span className="mx-1.5 font-bold" style={{ color: (s.pct ?? 0) > 0 ? '#c2410c' : (s.pct ?? 0) < 0 ? '#15803d' : '#6b7280' }} aria-label={(s.pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
                     {(s.pct ?? 0) > 0 ? '↗' : (s.pct ?? 0) < 0 ? '↘' : '→'}
                   </span>
-                  <strong className="font-black text-gray-900">{s.cur.toLocaleString()} in {activeTab === 'r52' ? 'the last 52 wks' : <>{yy(endYear)} {periodWord}</>}</strong>
+                  <strong className="font-black text-gray-900">{s.cur.toLocaleString()} in {activeTab === 'r52' ? 'the last 52 weeks' : <>{yy(endYear)} {periodWord}</>}</strong>
                 </span>
               </div>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
             <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}`
-              : activeTab === 'r52' ? (rollingMeta ? `52 weeks ending ${formatPeriodDate(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDate(rollingMeta.prior_to)}` : 'Loading the weekly series…')
+              : activeTab === 'r52' ? (rollingMeta ? `52 weeks ending ${formatPeriodDateFull(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDateFull(rollingMeta.prior_to)}` : 'Loading the weekly series…')
               : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
             <span className="text-gray-300" aria-hidden>·</span>
             {activeTab === 'r52'
