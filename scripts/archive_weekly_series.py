@@ -21,6 +21,7 @@ that trailing window, so anything older than ~106 weeks survives only if we kept
 
 import argparse
 import json
+import re
 import sys
 import time
 import urllib.error
@@ -48,6 +49,97 @@ EXTRA_METRICS = ["PSB", "Transit", "Housing", "Rape 1", "Other Sex Crimes",
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTDIR = ROOT / "data" / "weekly_series"
+ROLLUP = ROOT / "data" / "rolling.json"
+
+# The dashboard's metric names, keyed by the archive's.
+MAJOR_MAP = {"Murder": "Murder", "Rape": "Rape", "Robbery": "Robbery",
+             "Fel. Assault": "Fel. Assault", "Burglary": "Burglary",
+             "Gr. Larceny": "Gr. Larceny", "G.L.A.": "G.L.A."}
+ADDITIONAL_MAP = {"Transit": "Transit", "Housing": "Housing", "Petit Larceny": "Petit Larceny",
+                  "Misd. Assault": "Misd. Assault", "Hate Crimes": "Hate Crimes",
+                  "Other Sex Crimes": "Other Sex Crimes", "Rape 1": "UCR Rape*",
+                  "Sht. Vic.": "Shooting Vic.", "Sht. Inc.": "Shooting Inc.",
+                  "Total Fatalities": "Traffic Fatalities"}
+
+
+def ordinal_precinct(n):
+    if n % 100 in (11, 12, 13):
+        return f"{n}th Precinct"
+    return f"{n}{ {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th') } Precinct"
+
+
+def patrol_boroughs():
+    """Read the precinct-to-borough map out of the app rather than restating it here, so the
+    two can't drift apart."""
+    src = (ROOT / "src" / "shared.js").read_text()
+    body = re.search(r"const PATROL_BOROUGHS = \{(.*?)\n\};", src, re.S).group(1)
+    out = {}
+    for line in body.strip().splitlines():
+        m = re.match(r"\s*'([^']+)':\s*\[([0-9,\s]+)\]", line)
+        if m:
+            out[m.group(1)] = [int(x) for x in m.group(2).split(",") if x.strip()]
+    if sum(len(v) for v in out.values()) != 77:
+        raise SystemExit("Could not parse all 77 precincts out of PATROL_BOROUGHS.")
+    return out
+
+
+def write_rollup(master, coverage):
+    """Precompute the 52-week window into a small file the browser can read instantly.
+
+    The weekly archive is ~1.8MB, far too heavy for a view that now loads by default, and
+    the page must never render year-to-date figures under a 52-week headline while it
+    waits. Summing here means the browser fetches ~60KB of finished numbers instead."""
+    dense = master.get("Citywide", {}).get("TotalMajor7", {})
+    weeks = sorted(dense)
+    if len(weeks) < 104:
+        print(f"  only {len(weeks)} weeks — need 104 for a rolling comparison; skipping rollup")
+        return
+    cur_weeks, pri_weeks = weeks[-52:], weeks[-104:-52]
+
+    def node(series):
+        # A week missing inside the covered range had a count of zero; the API omits zeros.
+        cur = sum(series.get(w, 0) for w in cur_weeks)
+        pri = sum(series.get(w, 0) for w in pri_weeks)
+        pct = round((cur - pri) / pri * 100, 3) if pri else None
+        # Only year_to_date is read in the rolling view (the app routes every non-weekly
+        # window through that node), so the other two are omitted rather than triplicated.
+        return {"year_to_date": {"current_year": cur, "prior_year": pri, "pct_change": pct},
+                "historical": {}}
+
+    def build(metrics):
+        rec = {"seven_major_felonies": {}, "additional_stats": {}}
+        for metric, weekly in metrics.items():
+            if metric in MAJOR_MAP:
+                rec["seven_major_felonies"][MAJOR_MAP[metric]] = node(weekly)
+            elif metric in ADDITIONAL_MAP:
+                rec["additional_stats"][ADDITIONAL_MAP[metric]] = node(weekly)
+            elif metric == "TotalMajor7":
+                rec["total_seven_major"] = node(weekly)
+        return rec
+
+    out = {"_rolling": {"current_from": cur_weeks[0], "current_to": cur_weeks[-1],
+                        "prior_from": pri_weeks[0], "prior_to": pri_weeks[-1],
+                        "weeks": len(cur_weeks), "coverage": coverage}}
+    for archive_key, metrics in master.items():
+        geo = "citywide" if archive_key == "Citywide" else ordinal_precinct(int(archive_key))
+        out[geo] = build(metrics)
+
+    # Boroughs are exactly the union of their precincts — verified against NYPD's own
+    # borough files, and the reason this view is immune to a stale borough workbook.
+    for boro, nums in patrol_boroughs().items():
+        acc = {}
+        for n in nums:
+            for metric, weekly in master.get(f"{n:03d}", {}).items():
+                tally = acc.setdefault(metric, {})
+                for w, v in weekly.items():
+                    tally[w] = tally.get(w, 0) + v
+        out[boro] = build(acc)
+
+    ROLLUP.write_text(json.dumps(out, separators=(",", ":"), sort_keys=True) + "\n")
+    cw = out["citywide"]["total_seven_major"]["year_to_date"]
+    print(f"\nWrote {ROLLUP} ({ROLLUP.stat().st_size:,} bytes)")
+    print(f"  citywide 7-major: {cw['current_year']:,} vs {cw['prior_year']:,} "
+          f"({cw['pct_change']:+.2f}%)  [{cur_weeks[0]}..{cur_weeks[-1]}]")
 
 
 def post(rid, body, tries=4):
@@ -188,6 +280,8 @@ def main():
     print(f"  coverage: {coverage.get('from')} .. {coverage.get('to')}")
     if dense:
         print(f"  citywide TotalMajor7: {len(dense)} weeks (dense series)")
+
+    write_rollup(master, coverage)
 
 
 if __name__ == "__main__":

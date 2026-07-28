@@ -9,6 +9,9 @@ import {
 /* ------------------------------------------------------------------ */
 /* PRECINCT CHOROPLETH MAP                                             */
 /* ------------------------------------------------------------------ */
+// Tooltip footprint, used to decide which side of the cursor it can sit on.
+const TOOLTIP_W = 240, TOOLTIP_H = 150, GAP = 14;
+
 const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, height = 520, externalHovered = null, onHover }) => {
   const [hovered, setHovered] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
@@ -38,7 +41,9 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
   const handleMouse = (e) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    // Record the rendered size too: the SVG scales to its container, so viewBox units and
+    // on-screen pixels are not the same and can't be mixed when placing the tooltip.
+    setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width, h: rect.height });
   };
 
   const activeHover = hovered != null ? hovered : externalHovered;
@@ -98,10 +103,17 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
       {hoveredData && (() => {
         const pop = GEO_POPULATIONS[hoveredData.precinct];
         const rankInfo = rateRanks[hoveredData.precinctNum];
+        // Sit beside the cursor, and flip to whichever side has room, so the box never
+        // covers the precinct being pointed at.
+        const boxW = mousePos.w || 0, boxH = mousePos.h || 0;
+        const fitsRight = !boxW || mousePos.x + GAP + TOOLTIP_W <= boxW;
+        const left = fitsRight ? mousePos.x + GAP : Math.max(0, mousePos.x - GAP - TOOLTIP_W);
+        const top = boxH ? Math.max(0, Math.min(mousePos.y - 10, boxH - TOOLTIP_H)) : mousePos.y - 10;
+        const tooltipPos = { left, top };
         return (
           <div
             className="absolute pointer-events-none bg-white border border-gray-200 shadow-xl rounded p-3 z-50 text-[11px]"
-            style={{ left: Math.min(mousePos.x + 12, width - 220), top: mousePos.y - 10, minWidth: 200 }}
+            style={{ ...tooltipPos, minWidth: 200, maxWidth: TOOLTIP_W }}
           >
             <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
               <span className="font-black text-black text-[12px]">{hoveredData.precinct}</span>

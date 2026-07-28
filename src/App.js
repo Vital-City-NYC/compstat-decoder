@@ -5,7 +5,7 @@ import {
   safeNum, calcPct, formatGeoName, toOrdinalPrecinct, precinctPatrolBorough, PATROL_BOROUGH_NAMES,
   SearchIcon, Navigation, RefreshCw, Activity,
   RTCI_CSV_URL, parseRTCIcsv, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED,
-  ROLLING_URL, buildRollingData,
+  ROLLING_URL,
 } from './shared';
 // import vcLogo from './vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
 import HistoricView from './HistoricView';
@@ -46,8 +46,9 @@ export default function App() {
   const initialParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const [appView, setAppView] = useState(initialParams.get('view') || 'live');
   const [mainTab, setMainTab] = useState(TAB_KEYS.includes(initialParams.get('tab')) ? initialParams.get('tab') : 'headlines');
+  // 52 weeks is the default: it's the only window that means the same thing all year.
   const [activeTab, setActiveTab] = useState(
-    ['wtd', 'r52'].includes(initialParams.get('range')) ? initialParams.get('range') : 'ytd'); // ytd | wtd | r52
+    ['wtd', 'ytd'].includes(initialParams.get('range')) ? initialParams.get('range') : 'r52'); // r52 | ytd | wtd
   const [activeGeo, setActiveGeo] = useState(initialParams.get('geo') || 'citywide');
   const [districtNum, setDistrictNum] = useState(() => {
     const d = parseInt(initialParams.get('district'), 10);
@@ -59,7 +60,7 @@ export default function App() {
   const [fetchError, setFetchError] = useState(false);
   const [rtciData, setRtciData] = useState(null);
   const [contextData, setContextData] = useState(null);
-  const [rollingArchive, setRollingArchive] = useState(null);
+  const [rollingData, setRollingData] = useState(null);
   const [rollingState, setRollingState] = useState('idle'); // idle | loading | ready | error
   const [isLocating, setIsLocating] = useState(false);
 
@@ -88,7 +89,7 @@ export default function App() {
     const params = new URLSearchParams();
     if (appView !== 'live') params.set('view', appView);
     if (mainTab !== 'headlines') params.set('tab', mainTab);
-    if (activeTab !== 'ytd') params.set('range', activeTab);
+    if (activeTab !== 'r52') params.set('range', activeTab);
     if (activeGeo !== 'citywide') params.set('geo', activeGeo);
     if (mapMode !== 'rate') params.set('mapMode', mapMode);
     if (mapCrime !== 'all') params.set('mapCrime', mapCrime);
@@ -148,24 +149,25 @@ export default function App() {
       .catch(() => setContextData(null));
   }, []);
 
-  // The weekly series behind the 52-week view is ~800KB, so it loads only when that view
-  // is first selected rather than on every visit.
+  // The 52-week windows are summed by scripts/archive_weekly_series.py, so this is a small
+  // file of finished numbers rather than the ~1.8MB weekly archive it derives from.
   useEffect(() => {
     if (activeTab !== 'r52' || rollingState !== 'idle') return;
     setRollingState('loading');
     fetch(`${ROLLING_URL}?t=${Date.now()}`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error('no rolling data')))
-      .then(j => { setRollingArchive(j); setRollingState('ready'); })
+      .then(j => { setRollingData(j); setRollingState('ready'); })
       .catch(() => setRollingState('error'));
   }, [activeTab, rollingState]);
-
-  const rollingData = useMemo(() => buildRollingData(rollingArchive), [rollingArchive]);
 
   // Everything downstream reads one feed. In the 52-week view that feed is the rolling
   // window reshaped to look like CompStat's; until it loads, the live feed stands in so the
   // page never blanks.
   const effectiveRaw = (activeTab === 'r52' && rollingData) ? rollingData : rawData;
   const rollingMeta = rollingData?._rolling || null;
+  // About is plain prose and never shows a count, so it shouldn't wait on the data.
+  const rollingPending = activeTab === 'r52' && !rollingData && rollingState !== 'error'
+    && mainTab !== 'about';
 
   // Selecting a geography routes to a tab that can actually show it.
   const selectGeo = (geo) => {
@@ -504,6 +506,9 @@ export default function App() {
         </div>
 
         {/* Active tab content */}
+        {rollingPending ? (
+          <div className="py-24 text-center font-serif text-[15px] text-gray-400">Loading the 52-week window&hellip;</div>
+        ) : (<>
         {mainTab === 'headlines' && (
           <Headlines
             parsedData={parsedData}
@@ -561,6 +566,7 @@ export default function App() {
         {mainTab === 'about' && (
           <About contextData={contextData} parsedData={parsedData} fetchError={fetchError} />
         )}
+        </>)}
       </div>
     </div>
   );
