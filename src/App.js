@@ -5,7 +5,7 @@ import {
   safeNum, calcPct, formatGeoName, toOrdinalPrecinct, precinctPatrolBorough, PATROL_BOROUGH_NAMES,
   SearchIcon, Navigation, RefreshCw, Activity,
   RTCI_CSV_URL, parseRTCIcsv, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED,
-  ROLLING_URL,
+  ROLLING_URL, deriveBronxCommands,
 } from './shared';
 // import vcLogo from './vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
 import HistoricView from './HistoricView';
@@ -74,7 +74,7 @@ export default function App() {
     try {
       const resp = await fetch(`${RAW_URL}?t=${Date.now()}`);
       const json = await resp.json();
-      if (json && json.citywide) { setRawData(json); return; }
+      if (json && json.citywide) { setRawData(deriveBronxCommands(json)); return; }
     } catch (e1) {
       setFetchError(true);
     }
@@ -156,7 +156,7 @@ export default function App() {
     setRollingState('loading');
     fetch(`${ROLLING_URL}?t=${Date.now()}`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error('no rolling data')))
-      .then(j => { setRollingData(j); setRollingState('ready'); })
+      .then(j => { setRollingData(deriveBronxCommands(j)); setRollingState('ready'); })
       .catch(() => setRollingState('error'));
   }, [activeTab, rollingState]);
 

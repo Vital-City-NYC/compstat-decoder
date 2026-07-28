@@ -43,8 +43,21 @@ export default function About({ contextData, parsedData, fetchError }) {
         workbooks</A> by an automated pipeline each
         Monday after the NYPD posts them. The report covers the seven major felonies plus additional offenses
         (shootings, misdemeanor assault, petit larceny, retail theft, hate crimes, and housing totals)
-        for the city as a whole, the eight patrol boroughs, and all 77 precincts, with week,
-        28-day, and year-to-date comparisons against the same period a year earlier.
+        for the city as a whole, the nine patrol boroughs, and each precinct, with week,
+        28-day, and year-to-date comparisons against the same period a year earlier. The NYPD publishes 78
+        precinct workbooks; this dashboard currently carries 77, having not yet picked up the 116th Precinct in
+        Queens South, which the department added after this pipeline was built.
+      </P>
+      <P>
+        On May 20, 2026 the NYPD divided Patrol Borough Bronx into Bronx North (the 46th, 47th, 48th, 49th, 50th
+        and 52nd precincts) and Bronx South (the 40th through 45th), and now publishes a workbook for each. The
+        retired combined file was never taken down, and still answers with the last report it ever carried, for
+        the week ending May 17, 2026. This dashboard therefore builds both commands from their own precincts
+        instead, which are unaffected by the reorganization &mdash; so the two series run unbroken through the
+        split rather than beginning in May. Bronx North matches the NYPD&rsquo;s published workbook exactly.
+        Bronx South comes to 87 complaints less year to date, because the NYPD&rsquo;s borough file counts a
+        block of complaints that no Bronx South precinct does; the same 87 is the entire difference between the
+        citywide workbook and the sum of all 78 precinct files. The workbooks do not say what it represents.
       </P>
       <P>
         Nearly every count and percent change on the dashboard comes from this report. If the live feed is

@@ -78,8 +78,8 @@ def patrol_boroughs():
         m = re.match(r"\s*'([^']+)':\s*\[([0-9,\s]+)\]", line)
         if m:
             out[m.group(1)] = [int(x) for x in m.group(2).split(",") if x.strip()]
-    if sum(len(v) for v in out.values()) != 77:
-        raise SystemExit("Could not parse all 77 precincts out of PATROL_BOROUGHS.")
+    if sum(len(v) for v in out.values()) != 78:
+        raise SystemExit("Could not parse all 78 precincts out of PATROL_BOROUGHS.")
     return out
 
 
@@ -134,6 +134,24 @@ def write_rollup(master, coverage):
                 for w, v in weekly.items():
                     tally[w] = tally.get(w, 0) + v
         out[boro] = build(acc)
+
+    # The precincts must account for the whole city, every week. When they don't, a command
+    # is missing from the map above — which is exactly how the 116th Precinct stayed absent
+    # while every total on the site quietly ran short. Cheap to check, so check it.
+    gaps = []
+    for w in cur_weeks + pri_weeks:
+        city = master.get("Citywide", {}).get("TotalMajor7", {}).get(w)
+        if city is None:
+            continue
+        summed = sum(master.get(f"{n:03d}", {}).get("TotalMajor7", {}).get(w, 0)
+                     for nums in patrol_boroughs().values() for n in nums)
+        if summed != city:
+            gaps.append((w, city, summed))
+    if gaps:
+        worst = max(gaps, key=lambda g: abs(g[1] - g[2]))
+        print(f"  ! {len(gaps)} of {len(cur_weeks) + len(pri_weeks)} weeks don't reconcile to "
+              f"citywide (worst {worst[0]}: citywide {worst[1]}, precincts {worst[2]}). "
+              f"A precinct is probably missing from PATROL_BOROUGHS.", file=sys.stderr)
 
     ROLLUP.write_text(json.dumps(out, separators=(",", ":"), sort_keys=True) + "\n")
     cw = out["citywide"]["total_seven_major"]["year_to_date"]
@@ -190,10 +208,10 @@ def all_precinct_keys():
     from_book = post(BOOK, body_for("Citywide", None))
     if not from_book:
         raise SystemExit("CompStat Book returned nothing — the API contract may have changed.")
-    nums = [1, 5, 6, 7, 9, 10, 13, 14, 17, 18, 19, 20, 22, 23, 24, 25, 26, 28, 30, 32, 33,
-            34, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52, 60, 61, 62, 63, 66, 67, 68,
-            69, 70, 71, 72, 73, 75, 76, 77, 78, 79, 81, 83, 84, 88, 90, 94, 100, 101, 102,
-            103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 120, 121, 122, 123]
+    # Taken from the app's patrol-borough map rather than restated here. A second hardcoded
+    # list is how the 116th Precinct went unscraped for months: CompStat Book's own precinct
+    # picker still omits it, so a list copied from there stays quietly one short.
+    nums = sorted(n for nums in patrol_boroughs().values() for n in nums)
     return ["Citywide"] + [f"{n:03d}" for n in nums]
 
 

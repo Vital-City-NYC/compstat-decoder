@@ -4,7 +4,7 @@ import crimeHistory from '../data/crime_history.json';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import {
   CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
-  formatPop, formatRate, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
+  formatPop, formatRate, formatGeoName, geoWithArticle, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
   calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDateFull, staleGeo,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
@@ -351,6 +351,14 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           the city, which is current through {stale.current}. Precinct-level figures for this area are up to date.
         </div>
       )}
+      {['Bronx North', 'Bronx South'].includes(activeGeo) && (
+        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)', borderColor: '#b45309' }}>
+          <strong className="font-black">A new command.</strong> The NYPD divided Patrol Borough Bronx into
+          Bronx North and Bronx South on May 20, 2026. Precinct boundaries did not change, so the figures here —
+          including the stretch before the split, and the 52-week window, which spans it — are summed from the six
+          precincts assigned to this command.
+        </div>
+      )}
       {rollingUnavailable && (
         <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm font-serif text-gray-700">
           The weekly series behind the 52-week view couldn't be loaded, so these figures are still year-to-date.
@@ -362,7 +370,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </p>
       </div>
       <h1 className="text-[22px] sm:text-[26px] lg:text-[29px] font-black leading-[1.15] tracking-tight mb-5 text-black">
-        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in the ${activeGeo} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
+        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
       </h1>
 
       {/* Topline trends (left) with the locator map aligned to the top of the table (right) */}

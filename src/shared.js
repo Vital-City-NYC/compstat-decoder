@@ -185,7 +185,7 @@ export const GEO_POPULATIONS = {
   "107th Precinct": 161402, "108th Precinct": 137962, "109th Precinct": 269581, "110th Precinct": 181051, "111th Precinct": 122211,
   "112th Precinct": 119739, "113th Precinct": 135221, "114th Precinct": 208525, "115th Precinct": 179134,
   "120th Precinct": 122308, "121st Precinct": 128149, "122nd Precinct": 144552, "123rd Precinct": 100738,
-  "Bronx": 1477472, "Brooklyn South": 1705506, "Brooklyn North": 1030568, "Manhattan South": 684541, "Manhattan North": 989323, "Queens South": 1023773, "Queens North": 1397151, "Staten Island": 495747
+  "Bronx South": 718388, "Bronx North": 759084, "Brooklyn South": 1705506, "Brooklyn North": 1030568, "Manhattan South": 684541, "Manhattan North": 989323, "Queens South": 1023773, "Queens North": 1397151, "Staten Island": 495747
 };
 
 export const PRECINCT_NEIGHBORHOODS = {
@@ -213,7 +213,8 @@ export const PRECINCT_NEIGHBORHOODS = {
   "106th Precinct": "Ozone Park", "107th Precinct": "Fresh Meadows", "108th Precinct": "Long Island City",
   "109th Precinct": "Flushing", "110th Precinct": "Elmhurst", "111th Precinct": "Bayside",
   "112th Precinct": "Forest Hills", "113th Precinct": "South Jamaica", "114th Precinct": "Astoria",
-  "115th Precinct": "Jackson Heights", "120th Precinct": "St. George", "121st Precinct": "Bulls Head",
+  "115th Precinct": "Jackson Heights", "116th Precinct": "Rosedale, Laurelton",
+  "120th Precinct": "St. George", "121st Precinct": "Bulls Head",
   "122nd Precinct": "New Dorp", "123rd Precinct": "Tottenville"
 };
 
@@ -300,6 +301,11 @@ export const formatGeoName = (geo) => {
   if (PRECINCT_NEIGHBORHOODS[geo]) return `${geo} (${PRECINCT_NEIGHBORHOODS[geo]})`;
   return geo;
 };
+
+// Precincts take an article, patrol boroughs don't: "in the 40th Precinct", "in Bronx North".
+// Carry it with the name so sentences don't have to guess.
+export const geoWithArticle = (geo) =>
+  (geo && geo.includes('Precinct')) ? `the ${geo}` : geo;
 export const formatPeriodDate = (iso) => {
   if (!iso) return null;
   const d = new Date(iso);
@@ -312,10 +318,16 @@ export const formatPeriodDate = (iso) => {
 const PATROL_BOROUGHS = {
   'Manhattan South': [1, 5, 6, 7, 9, 10, 13, 14, 17, 18],
   'Manhattan North': [19, 20, 22, 23, 24, 25, 26, 28, 30, 32, 33, 34],
-  'Bronx': [40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52],
+  // NYPD split Patrol Borough Bronx in two on May 20, 2026 (Commissioner Tisch, PR008).
+  // Precinct lines did not move, so every period — before or after the split — can be
+  // grouped either way, which is how this app shows an unbroken history for both commands.
+  'Bronx South': [40, 41, 42, 43, 44, 45],
+  'Bronx North': [46, 47, 48, 49, 50, 52],
   'Brooklyn South': [60, 61, 62, 63, 66, 67, 68, 69, 70, 71, 72, 76, 78],
   'Brooklyn North': [73, 75, 77, 79, 81, 83, 84, 88, 90, 94],
-  'Queens South': [100, 101, 102, 103, 105, 106, 107, 113],
+  // The 116th opened in Rosedale in December 2024, out of the southern end of the 105th
+  // and part of the 113th — the first wholly new NYPD command in over a decade.
+  'Queens South': [100, 101, 102, 103, 105, 106, 107, 113, 116],
   'Queens North': [104, 108, 109, 110, 111, 112, 114, 115],
   'Staten Island': [120, 121, 122, 123],
 };
@@ -440,6 +452,85 @@ export const volatilitySentence = (v, noun = 'precinct') => {
 /* ------------------------------------------------------------------ */
 export const ROLLING_URL =
   `https://raw.githubusercontent.com/tedalcorn/${REPO_SELF}/main/data/rolling.json`;
+
+/* ------------------------------------------------------------------ */
+/* THE TWO BRONX COMMANDS                                              */
+/*                                                                      */
+/* NYPD split Patrol Borough Bronx into Bronx North and Bronx South on  */
+/* May 20, 2026 and now publishes a workbook for each. The upstream     */
+/* scraper still asks for the retired combined file, cs-en-us-pbbx.xlsx */
+/* — which NYPD never took down, so it answers 200 with the last        */
+/* pre-split report (week ending 5/17/2026) instead of 404ing. A stale  */
+/* file that returns success is invisible to a missing-file check, so   */
+/* the feed's "Bronx" node is frozen in May.                            */
+/*                                                                      */
+/* Rather than trust it, both commands are rebuilt here from their own  */
+/* precincts, which are current and unchanged by the reorganization.    */
+/* Bronx North reproduces NYPD's published workbook exactly. Bronx      */
+/* South lands 87 complaints below NYPD's (7,424 vs 7,511 year to date  */
+/* on 7/26/2026): NYPD's borough file carries complaints not charged to */
+/* any of its six precincts. That block is the whole of the difference  */
+/* between the citywide workbook and the sum of all 78 precinct files,  */
+/* it is absent before 2025, and NYPD has been asked what it is.        */
+/* ------------------------------------------------------------------ */
+const BRONX_COMMANDS = ['Bronx South', 'Bronx North'];
+
+const sumWindow = (nodes, window) => {
+  let cur = 0, pri = 0, seen = false;
+  for (const n of nodes) {
+    const w = n?.[window];
+    if (!w) continue;
+    seen = true;
+    cur += safeNum(w.current_year) || 0;
+    pri += safeNum(w.prior_year) || 0;
+  }
+  if (!seen) return null;
+  return { current_year: cur, prior_year: pri, pct_change: pri ? ((cur - pri) / pri) * 100 : null };
+};
+
+// Long-run percentages (2/16/33 year) can't be added up, and the feed carries no
+// precinct-level base counts to rebuild them from, so they are left out rather than
+// approximated — the app already renders a dash where a series has no deep history.
+const sumMetric = (nodes) => {
+  const out = {};
+  for (const w of ['week_to_date', 'twenty_eight_day', 'year_to_date']) {
+    const s = sumWindow(nodes, w);
+    if (s) out[w] = s;
+  }
+  out.historical = {};
+  return out;
+};
+
+export const deriveBronxCommands = (raw) => {
+  if (!raw || typeof raw !== 'object') return raw;
+  const out = { ...raw };
+  for (const boro of BRONX_COMMANDS) {
+    const members = (PATROL_BOROUGHS[boro] || [])
+      .map(n => raw[toOrdinalPrecinct(n)])
+      .filter(Boolean);
+    // If the precincts aren't there, leave the feed alone rather than invent a borough.
+    if (members.length !== (PATROL_BOROUGHS[boro] || []).length) return raw;
+
+    const rec = {
+      source: 'Summed from precinct workbooks (see About)',
+      report_period: members[0].report_period,
+      seven_major_felonies: {},
+      additional_stats: {},
+    };
+    const total = sumMetric(members.map(m => m.total_seven_major));
+    if (total) rec.total_seven_major = total;
+    for (const group of ['seven_major_felonies', 'additional_stats']) {
+      const names = new Set();
+      members.forEach(m => Object.keys(m[group] || {}).forEach(k => names.add(k)));
+      for (const name of names) {
+        rec[group][name] = sumMetric(members.map(m => m[group]?.[name]));
+      }
+    }
+    out[boro] = rec;
+  }
+  delete out['Bronx'];   // retired May 20, 2026 — never show the frozen combined file
+  return out;
+};
 
 /* ------------------------------------------------------------------ */
 /* STALE GEOGRAPHY GUARD                                               */
