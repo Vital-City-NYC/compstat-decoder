@@ -1,5 +1,89 @@
 [
  {
+  "date": "2026-03-01",
+  "path": "archive/2026-03-01.json"
+ },
+ {
+  "date": "2026-03-08",
+  "path": "archive/2026-03-08.json"
+ },
+ {
+  "date": "2026-03-15",
+  "path": "archive/2026-03-15.json"
+ },
+ {
+  "date": "2026-03-22",
+  "path": "archive/2026-03-22.json"
+ },
+ {
+  "date": "2026-03-29",
+  "path": "archive/2026-03-29.json"
+ },
+ {
+  "date": "2026-04-05",
+  "path": "archive/2026-04-05.json"
+ },
+ {
+  "date": "2026-04-12",
+  "path": "archive/2026-04-12.json"
+ },
+ {
+  "date": "2026-04-19",
+  "path": "archive/2026-04-19.json"
+ },
+ {
+  "date": "2026-04-26",
+  "path": "archive/2026-04-26.json"
+ },
+ {
+  "date": "2026-05-03",
+  "path": "archive/2026-05-03.json"
+ },
+ {
+  "date": "2026-05-10",
+  "path": "archive/2026-05-10.json"
+ },
+ {
+  "date": "2026-05-17",
+  "path": "archive/2026-05-17.json"
+ },
+ {
+  "date": "2026-05-24",
+  "path": "archive/2026-05-24.json"
+ },
+ {
+  "date": "2026-05-31",
+  "path": "archive/2026-05-31.json"
+ },
+ {
+  "date": "2026-06-07",
+  "path": "archive/2026-06-07.json"
+ },
+ {
+  "date": "2026-06-14",
+  "path": "archive/2026-06-14.json"
+ },
+ {
+  "date": "2026-06-21",
+  "path": "archive/2026-06-21.json"
+ },
+ {
+  "date": "2026-06-28",
+  "path": "archive/2026-06-28.json"
+ },
+ {
+  "date": "2026-07-05",
+  "path": "archive/2026-07-05.json"
+ },
+ {
+  "date": "2026-07-12",
+  "path": "archive/2026-07-12.json"
+ },
+ {
+  "date": "2026-07-19",
+  "path": "archive/2026-07-19.json"
+ },
+ {
   "date": "2026-07-26",
   "path": "archive/2026-07-26.json"
  }

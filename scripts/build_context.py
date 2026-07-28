@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build data/context.json — the numbers the dashboard uses to describe its own reliability.
 
-Two things are computed here, both from the weekly snapshot archive that the upstream
-scraper keeps at joshgreenman1973/nypd-compstat-scraper (data/archive/YYYY-MM-DD.json):
+Two things are computed here, both from this repo's own weekly snapshot archive
+(data/archive/YYYY-MM-DD.json, written by scripts/scrape_compstat.py on every run):
 
   1. REVISIONS. NYPD classifies a complaint when it is reported and reclassifies it as
      evidence arrives. Each snapshot's year-to-date total should grow by exactly that
@@ -31,15 +31,10 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 # Revisions can only be measured against what the NYPD published at the time, so this needs a
-# record of past weeks as-published. We keep our own (scripts/scrape_compstat.py archives one
-# every run), but it only starts the day we began collecting. The upstream scraper has been
-# archiving since 2026-03-01, so its older snapshots are still read to cover the earlier weeks.
-# Ours wins wherever both have a date. Once our archive spans the window we care about, the
-# fallback can be deleted outright.
-LOCAL_ARCHIVE = Path(__file__).resolve().parent.parent / "data"
-FALLBACK_REPO = "joshgreenman1973/nypd-compstat-scraper"
-INDEX_URL = f"https://raw.githubusercontent.com/{FALLBACK_REPO}/main/data/index.json"
-ARCHIVE_URL = f"https://raw.githubusercontent.com/{FALLBACK_REPO}/main/data/" + "{path}"
+# record of past weeks as-published. That record is now entirely our own: scrape_compstat.py
+# archives a snapshot every run, and the weeks before we started were imported once by
+# scripts/import_upstream_archive.py. Nothing here reaches off this repo.
+ARCHIVE_DIR = Path(__file__).resolve().parent.parent / "data" / "archive"
 
 MAJOR7 = ["Murder", "Rape", "Robbery", "Fel. Assault", "Burglary", "Gr. Larceny", "G.L.A."]
 ROOT = Path(__file__).resolve().parent.parent
@@ -53,31 +48,11 @@ def fetch_json(url, timeout=60):
 
 def load_snapshots():
     """Pull every archived weekly snapshot, oldest first — ours first, upstream for the rest."""
-    local = {p.stem: p for p in sorted((LOCAL_ARCHIVE / "archive").glob("*.json"))}
-    try:
-        remote = {e["date"]: e for e in fetch_json(INDEX_URL) if e["date"] not in local}
-    except (urllib.error.URLError, json.JSONDecodeError) as exc:
-        print(f"  ! upstream archive unreachable ({exc}); using local snapshots only",
-              file=sys.stderr)
-        remote = {}
-    dates = sorted(set(local) | set(remote))
-    if not dates:
-        raise SystemExit("No weekly snapshots available from either archive.")
-    print(f"  {len(dates)} weekly snapshots ({dates[0]} -> {dates[-1]}): "
-          f"{len(local)} local, {len(remote)} upstream", flush=True)
-
-    def one(date):
-        if date in local:
-            return date, json.loads(local[date].read_text())
-        try:
-            return date, fetch_json(ARCHIVE_URL.format(path=remote[date]["path"]))
-        except (urllib.error.URLError, json.JSONDecodeError) as exc:
-            print(f"  ! {date}: {exc}", file=sys.stderr)
-            return date, None
-
-    with ThreadPoolExecutor(max_workers=6) as pool:
-        got = list(pool.map(one, dates))
-    snaps = [(d, s) for d, s in got if s]
+    files = sorted(ARCHIVE_DIR.glob("*.json"))
+    if not files:
+        raise SystemExit(f"No weekly snapshots in {ARCHIVE_DIR} — nothing to measure against.")
+    print(f"  {len(files)} weekly snapshots ({files[0].stem} -> {files[-1].stem})", flush=True)
+    snaps = [(p.stem, json.loads(p.read_text())) for p in files]
     for i, (d, _) in enumerate(snaps, 1):
         if i % 5 == 0 or i == len(snaps):
             print(f"  fetched {i}/{len(snaps)}", flush=True)

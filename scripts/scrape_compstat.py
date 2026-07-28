@@ -106,16 +106,30 @@ def fetch(slug, tries=3):
 
 
 def num(cell):
-    """Workbook percent cells read '***.*' where a change is undefined (divide by zero)."""
-    return cell if isinstance(cell, (int, float)) else None
+    """Coerce a workbook cell to a number, or None where it genuinely has no value.
+
+    Two things to know about these sheets. Percent cells read '***.*' where a change is
+    undefined (no prior-year count to divide by) — that is a real absence, so it stays None.
+    But counts are sometimes stored as text rather than numbers: every zero in the additional-
+    offense rows comes through as the string '0', about 2,200 of them across the 88 workbooks.
+    Treating those as missing turns "no hate crimes this week" into "no data this week", so
+    anything that parses as a number is taken as one.
+    """
+    if isinstance(cell, (int, float)):
+        return cell
+    if isinstance(cell, str):
+        text = cell.strip().replace(",", "")
+        try:
+            return float(text) if "." in text else int(text)
+        except ValueError:
+            return None
+    return None
 
 
 def parse(blob, label):
     wb = openpyxl.load_workbook(BytesIO(blob), data_only=True, read_only=True)
     ws = wb["CompStat"]
-    # read_only sheets don't support random cell access until dimensions are known.
-    rows = {c.row: {c.column_letter: c.value for c in row if c.value not in (None, "")}
-            for row in ws.iter_rows(min_row=1, max_row=60) for c in row if c.value not in (None, "")}
+    # read_only sheets don't support random cell access, so build a row/column grid first.
     grid = {}
     for row in ws.iter_rows(min_row=1, max_row=60):
         for c in row:
