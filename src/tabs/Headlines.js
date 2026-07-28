@@ -6,7 +6,7 @@ import {
   CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
-  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence,
+  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDate, staleGeo,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
   Download,
 } from '../shared';
@@ -219,7 +219,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
   const isCitywide = activeGeo === 'citywide';
   const isBorough = PATROL_BOROUGH_NAMES.includes(activeGeo);
   const isPrecinct = activeGeo.includes('Precinct');
-  const periodWord = activeTab === 'ytd' ? 'YTD' : 'this week';
+  const periodWord = activeTab === 'ytd' ? 'YTD' : activeTab === 'r52' ? 'last 52 wks' : 'this week';
   const hereWord = isCitywide ? 'citywide' : isBorough ? `across ${activeGeo}` : 'here';
   const bullets = [];
 
@@ -303,7 +303,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
 /* ------------------------------------------------------------------ */
 /* HEADLINES TAB                                                       */
 /* ------------------------------------------------------------------ */
-export default function Headlines({ parsedData, hotspots, rawData, activeTab, activeGeo, isTouristPrecinct, activePop, rtciData, contextData, downloadCSV, onSelectGeo }) {
+export default function Headlines({ parsedData, hotspots, rawData, activeTab, activeGeo, isTouristPrecinct, activePop, rtciData, contextData, rollingMeta, rollingState, downloadCSV, onSelectGeo }) {
   const { totals, felonies, period } = parsedData;
 
   // Violent / property subsets of the 7-felony major index.
@@ -317,7 +317,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
 
   const endYear = period?.week_end ? new Date(period.week_end).getFullYear() : new Date().getFullYear();
   const yy = (y) => `’${String(y).slice(-2)}`;
-  const periodWord = activeTab === 'ytd' ? 'YTD' : 'this week';
+  const periodWord = activeTab === 'ytd' ? 'YTD' : activeTab === 'r52' ? 'last 52 wks' : 'this week';
 
   const statLines = [
     { label: 'Major crime index', sub: 'All 7 major felonies', cur: totals.mCur, pri: totals.mPri, pct: totals.mPct },
@@ -331,19 +331,35 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
   // fixed-length window, which doesn't have this problem.
   const volatilityKey = activeGeo === 'citywide' ? 'citywide' : activeGeo;
   const volatility = activeTab === 'ytd' ? ytdVolatility(contextData, volatilityKey) : null;
+  const rollingUnavailable = activeTab === 'r52' && rollingState === 'error';
+  // 52wk is summed from precinct series, so it isn't exposed to a stale borough workbook.
+  const stale = activeTab === 'r52' ? null : staleGeo(rawData, activeGeo);
   const volatilityNoun = activeGeo === 'citywide' ? 'city' : PATROL_BOROUGH_NAMES.includes(activeGeo) ? 'borough' : 'precinct';
 
   return (
     <div>
       {isTouristPrecinct && <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm font-serif italic text-gray-700"><strong>Context Note:</strong> {formatGeoName(activeGeo)} is a high-traffic hub with few residents; crime rates primarily reflect commercial/visitor density.</div>}
 
+      {stale && (
+        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)', borderColor: '#b45309' }}>
+          <strong className="font-black">These figures are out of date.</strong> The NYPD publishes a separate
+          weekly file for each geography, and the one for {formatGeoName(activeGeo)} was last updated for the week
+          ending {stale.asOf} — {stale.weeksBehind} {stale.weeksBehind === 1 ? 'week' : 'weeks'} behind the rest of
+          the city, which is current through {stale.current}. Precinct-level figures for this area are up to date.
+        </div>
+      )}
+      {rollingUnavailable && (
+        <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm font-serif text-gray-700">
+          The weekly series behind the 52-week view couldn't be loaded, so these figures are still year-to-date.
+        </div>
+      )}
       <div className="mb-7">
         <p className="font-serif text-[17px] lg:text-[18px] leading-relaxed text-gray-700 font-medium text-justify sm:text-left hyphens-auto">
           Every week the New York City Police Department updates data on reported crime in precincts across the city, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
         </p>
       </div>
       <h1 className="text-[22px] sm:text-[26px] lg:text-[29px] font-black leading-[1.15] tracking-tight mb-5 text-black">
-        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : 'this week'} {activeGeo === 'citywide' ? '' : `in the ${activeGeo} `}compared to last year.
+        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in the ${activeGeo} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
       </h1>
 
       {/* Topline trends (left) with the locator map aligned to the top of the table (right) */}
@@ -383,9 +399,13 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
-            <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}` : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
+            <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}`
+              : activeTab === 'r52' ? (rollingMeta ? `52 weeks ending ${formatPeriodDate(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDate(rollingMeta.prior_to)}` : 'Loading the weekly series…')
+              : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
             <span className="text-gray-300" aria-hidden>·</span>
-            <ProvisionalNote year={endYear} contextData={contextData} />
+            {activeTab === 'r52'
+              ? <span className="text-gray-400">Recent weeks are still being revised upward, so this slightly understates the latest year.</span>
+              : <ProvisionalNote year={endYear} contextData={contextData} />}
           </div>
         </div>
         <LocatorMap activeGeo={activeGeo} onSelectGeo={onSelectGeo} />
@@ -408,12 +428,10 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
               {/* How much the figure above has already moved this year. Set off in amber so it
                   reads as a caveat about the measure rather than another finding about crime. */}
               {volatility && (
-                <li className="flex gap-3 font-serif text-[15px] leading-relaxed pt-1">
-                  <span className="flex-shrink-0 mt-[1px]" style={{ color: '#b45309' }}>▪</span>
-                  <span style={{ color: '#92400e' }}>
-                    <strong className="font-black">Why this number moves:</strong>{' '}
-                    {volatilitySentence(volatility, volatilityNoun)}
-                  </span>
+                <li className="font-serif text-[15px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
+                    style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)' }}>
+                  <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
+                  {volatilitySentence(volatility, volatilityNoun)}
                 </li>
               )}
             </ul>

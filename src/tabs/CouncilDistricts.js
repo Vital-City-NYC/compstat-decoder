@@ -8,7 +8,7 @@ import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
   safeNum, pctColor, dirPct, signedCount, expandCrime,
   toOrdinalPrecinct, SearchIcon, ChevronDown, Download,
-  ytdVolatility, volatilitySentence,
+  ytdVolatility, volatilitySentence, VOLATILITY_LABEL,
 } from '../shared';
 
 const MAJORS = ['Murder', 'Rape', 'Robbery', 'Fel. Assault', 'Burglary', 'Gr. Larceny', 'G.L.A.'];
@@ -527,16 +527,13 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                 figure rather than any single precinct's. Set off in amber so it reads as a note
                 about the measure, not another finding. */}
             {districtVolatility && (
-              <li className="flex gap-2.5 font-serif text-[14px] leading-relaxed pt-1">
-                <span className="flex-shrink-0 mt-[1px]" style={{ color: '#b45309' }}>▪</span>
-                <span style={{ color: '#92400e' }}>
-                  <strong className="font-black">Why this number moves:</strong>{' '}
-                  {volatilitySentence(districtVolatility, 'district')}
-                </span>
+              <li className="font-serif text-[14px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
+                  style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)' }}>
+                <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
+                {volatilitySentence(districtVolatility, 'district')}
               </li>
             )}
           </ul>
-          <p className="text-[10px] text-gray-400 italic mt-3">Estimated from each precinct's citywide CompStat totals, weighted by its share of the district's area — a crude approximation, since precincts extend beyond district lines.</p>
         </div>
       )}
 

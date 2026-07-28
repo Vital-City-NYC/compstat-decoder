@@ -5,6 +5,7 @@ import {
   safeNum, calcPct, formatGeoName, toOrdinalPrecinct, precinctPatrolBorough, PATROL_BOROUGH_NAMES,
   SearchIcon, Navigation, RefreshCw, Activity,
   RTCI_CSV_URL, parseRTCIcsv, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED,
+  ROLLING_URL, buildRollingData,
 } from './shared';
 // import vcLogo from './vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
 import HistoricView from './HistoricView';
@@ -42,7 +43,8 @@ export default function App() {
   const initialParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : new URLSearchParams();
   const [appView, setAppView] = useState(initialParams.get('view') || 'live');
   const [mainTab, setMainTab] = useState(TAB_KEYS.includes(initialParams.get('tab')) ? initialParams.get('tab') : 'headlines');
-  const [activeTab, setActiveTab] = useState(initialParams.get('range') === 'wtd' ? 'wtd' : 'ytd'); // ytd | wtd
+  const [activeTab, setActiveTab] = useState(
+    ['wtd', 'r52'].includes(initialParams.get('range')) ? initialParams.get('range') : 'ytd'); // ytd | wtd | r52
   const [activeGeo, setActiveGeo] = useState(initialParams.get('geo') || 'citywide');
   const [districtNum, setDistrictNum] = useState(() => {
     const d = parseInt(initialParams.get('district'), 10);
@@ -54,6 +56,8 @@ export default function App() {
   const [fetchError, setFetchError] = useState(false);
   const [rtciData, setRtciData] = useState(null);
   const [contextData, setContextData] = useState(null);
+  const [rollingArchive, setRollingArchive] = useState(null);
+  const [rollingState, setRollingState] = useState('idle'); // idle | loading | ready | error
   const [isLocating, setIsLocating] = useState(false);
 
   // Map state ('volume' was retired as a map mode; normalize legacy links to 'rate')
@@ -97,7 +101,7 @@ export default function App() {
 
   // Weekly counts don't apply on the transit and council tabs — snap back to YTD there.
   useEffect(() => {
-    if (YTD_ONLY_TABS.includes(mainTab) && activeTab === 'wtd') setActiveTab('ytd');
+    if (YTD_ONLY_TABS.includes(mainTab) && activeTab !== 'ytd') setActiveTab('ytd');
   }, [mainTab, activeTab]);
 
   // Generic CSV download helper. Takes a filename and an array of arrays (header + rows).
@@ -139,6 +143,25 @@ export default function App() {
       .then(setContextData)
       .catch(() => setContextData(null));
   }, []);
+
+  // The weekly series behind the 52-week view is ~800KB, so it loads only when that view
+  // is first selected rather than on every visit.
+  useEffect(() => {
+    if (activeTab !== 'r52' || rollingState !== 'idle') return;
+    setRollingState('loading');
+    fetch(`${ROLLING_URL}?t=${Date.now()}`)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('no rolling data')))
+      .then(j => { setRollingArchive(j); setRollingState('ready'); })
+      .catch(() => setRollingState('error'));
+  }, [activeTab, rollingState]);
+
+  const rollingData = useMemo(() => buildRollingData(rollingArchive), [rollingArchive]);
+
+  // Everything downstream reads one feed. In the 52-week view that feed is the rolling
+  // window reshaped to look like CompStat's; until it loads, the live feed stands in so the
+  // page never blanks.
+  const effectiveRaw = (activeTab === 'r52' && rollingData) ? rollingData : rawData;
+  const rollingMeta = rollingData?._rolling || null;
 
   // Selecting a geography routes to a tab that can actually show it.
   const selectGeo = (geo) => {
@@ -191,13 +214,13 @@ export default function App() {
   }, [searchQuery, boroughs]);
 
   const parsedData = useMemo(() => {
-    const geoData = rawData[activeGeo] || rawData['citywide'];
-    const citywideData = rawData['citywide'];
+    const geoData = effectiveRaw[activeGeo] || effectiveRaw['citywide'];
+    const citywideData = effectiveRaw['citywide'];
     const pop = activeGeo === 'citywide' ? CITYWIDE_POPULATION : (GEO_POPULATIONS[activeGeo] || null);
     const extract = (obj) => Object.entries(obj || {}).map(([name, stats]) => {
-      const current = activeTab === 'ytd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year;
-      const prior = activeTab === 'ytd' ? stats?.year_to_date?.prior_year : stats?.week_to_date?.prior_year;
-      const pct = activeTab === 'ytd' ? stats?.year_to_date?.pct_change : stats?.week_to_date?.pct_change;
+      const current = activeTab !== 'wtd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year;
+      const prior = activeTab !== 'wtd' ? stats?.year_to_date?.prior_year : stats?.week_to_date?.prior_year;
+      const pct = activeTab !== 'wtd' ? stats?.year_to_date?.pct_change : stats?.week_to_date?.pct_change;
       const c = safeNum(current); const p = safeNum(prior);
       return { name, current: c, prior: p, pct, diff: c - p, hist: stats?.historical || {}, currentRate: pop ? (c / pop) * 100000 : null };
     });
@@ -227,12 +250,12 @@ export default function App() {
       const cwAll = { ...cwFelonies, ...cwAddl };
 
       Object.entries(cwAll).forEach(([n, s]) => {
-        const c = activeTab === 'ytd' ? s?.year_to_date?.current_year : s?.week_to_date?.current_year;
+        const c = activeTab !== 'wtd' ? s?.year_to_date?.current_year : s?.week_to_date?.current_year;
         citywideRates[n] = (safeNum(c) / CITYWIDE_POPULATION) * 100000;
       });
 
       Object.values(cwFelonies).forEach(stats => {
-        const c = activeTab === 'ytd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year;
+        const c = activeTab !== 'wtd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year;
         cwMCur += safeNum(c);
       });
     }
@@ -283,7 +306,7 @@ export default function App() {
         lethalityRatio: murder > 0 ? (shootingVic / murder) : 0
       }
     };
-  }, [rawData, activeTab, activeGeo]);
+  }, [effectiveRaw, activeTab, activeGeo]);
 
   // Dynamic <title> so browser tabs and social previews carry the latest reporting period.
   useEffect(() => {
@@ -301,15 +324,15 @@ export default function App() {
     // Scope the pattern-detection pool: citywide looks across all precincts; a borough
     // looks only at its own precincts. (Precinct views use their own vs-citywide rules.)
     const isBorough = PATROL_BOROUGH_NAMES.includes(activeGeo);
-    const keys = Object.keys(rawData).filter(k => k !== 'citywide' && k.includes('Precinct'))
+    const keys = Object.keys(effectiveRaw).filter(k => k !== 'citywide' && k.includes('Precinct'))
       .filter(k => !isBorough || precinctPatrolBorough(k) === activeGeo);
     const topCount = isBorough ? 3 : 5;
     let volumes = [], allPrecinctCrimes = [];
     keys.forEach(pct => {
-      const data = rawData[pct]; let vSum = 0;
+      const data = effectiveRaw[pct]; let vSum = 0;
       Object.entries(data.seven_major_felonies || {}).forEach(([crime, stats]) => {
-        const c = safeNum(activeTab === 'ytd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year);
-        const p = safeNum(activeTab === 'ytd' ? stats?.year_to_date?.prior_year : stats?.week_to_date?.prior_year);
+        const c = safeNum(activeTab !== 'wtd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year);
+        const p = safeNum(activeTab !== 'wtd' ? stats?.year_to_date?.prior_year : stats?.week_to_date?.prior_year);
         if (VIOLENT_CRIMES.includes(crime)) vSum += c;
         if (p >= VOLATILITY_THRESHOLD) allPrecinctCrimes.push({ precinct: pct, crime, pct: ((c - p) / p) * 100, current: c, prior: p });
       });
@@ -325,7 +348,7 @@ export default function App() {
     }
     allPrecinctCrimes.sort((a, b) => b.pct - a.pct);
     return { inequality, topPctSpike: allPrecinctCrimes[0], topPctDrop: allPrecinctCrimes[allPrecinctCrimes.length - 1] };
-  }, [rawData, activeTab, activeGeo]);
+  }, [effectiveRaw, activeTab, activeGeo]);
 
   const isTouristPrecinct = TOURIST_PRECINCTS.includes(activeGeo);
   const activePop = GEO_POPULATIONS[activeGeo] || (activeGeo === 'citywide' ? CITYWIDE_POPULATION : null);
@@ -334,15 +357,15 @@ export default function App() {
 
   // Compute per-100k rates for all precincts (for map + ranking bars)
   const precinctRates = useMemo(() => {
-    const precinctKeys = Object.keys(rawData).filter(k => k.includes('Precinct'));
+    const precinctKeys = Object.keys(effectiveRaw).filter(k => k.includes('Precinct'));
     return precinctKeys.map(pct => {
       const pop = GEO_POPULATIONS[pct];
-      const d = rawData[pct];
+      const d = effectiveRaw[pct];
       const felonies = d.seven_major_felonies || {};
       const addl = d.additional_stats || {};
       let count = 0, priorCount = 0;
-      const getCurrent = (stats) => safeNum(activeTab === 'ytd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year);
-      const getPrior = (stats) => safeNum(activeTab === 'ytd' ? stats?.year_to_date?.prior_year : stats?.week_to_date?.prior_year);
+      const getCurrent = (stats) => safeNum(activeTab !== 'wtd' ? stats?.year_to_date?.current_year : stats?.week_to_date?.current_year);
+      const getPrior = (stats) => safeNum(activeTab !== 'wtd' ? stats?.year_to_date?.prior_year : stats?.week_to_date?.prior_year);
       if (mapCrime === 'all') {
         Object.values(felonies).forEach(s => { count += getCurrent(s); priorCount += getPrior(s); });
       } else if (mapCrime === 'violent') {
@@ -357,7 +380,7 @@ export default function App() {
       const pctChange = priorCount > 0 ? ((count - priorCount) / priorCount) * 100 : null;
       return { precinct: pct, precinctNum, rate: pop ? (count / pop) * 100000 : null, count, priorCount, pctChange, isTourist: TOURIST_PRECINCTS.includes(pct) };
     });
-  }, [rawData, activeTab, mapCrime]);
+  }, [effectiveRaw, activeTab, mapCrime]);
 
   // ==========================================
   // HISTORIC VIEW
@@ -466,6 +489,7 @@ export default function App() {
             <div className="flex border border-gray-300 rounded overflow-hidden shrink-0">
               <button onClick={() => !ytdOnly && setActiveTab('wtd')} disabled={ytdOnly} aria-pressed={activeTab === 'wtd'} title={ytdOnly ? 'Weekly data is not available on this view' : 'This CompStat week vs the same week last year'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${ytdOnly ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'wtd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Wk</button>
               <button onClick={() => setActiveTab('ytd')} aria-pressed={activeTab === 'ytd'} title="Year-to-date vs the same period last year" className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${activeTab === 'ytd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>YTD</button>
+              <button onClick={() => !ytdOnly && setActiveTab('r52')} disabled={ytdOnly} aria-pressed={activeTab === 'r52'} title={ytdOnly ? 'The rolling window is not available on this view' : 'The last 52 weeks vs the 52 weeks before them — a window that never changes length'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${ytdOnly ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'r52' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>52wk</button>
             </div>
             <button onClick={() => setAppView('historic')} title="The 30-year transformation of NYC crime" className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
               <Activity size={12} /> 30-Yr
@@ -479,13 +503,15 @@ export default function App() {
           <Headlines
             parsedData={parsedData}
             hotspots={hotspots}
-            rawData={rawData}
+            rawData={effectiveRaw}
             activeTab={activeTab}
             activeGeo={activeGeo}
             isTouristPrecinct={isTouristPrecinct}
             activePop={activePop}
             rtciData={rtciData}
             contextData={contextData}
+            rollingMeta={rollingMeta}
+            rollingState={rollingState}
             downloadCSV={downloadCSV}
             onSelectGeo={goToGeoHeadlines}
           />
@@ -497,6 +523,7 @@ export default function App() {
             activeGeo={activeGeo}
             isTouristPrecinct={isTouristPrecinct}
             contextData={contextData}
+            rollingMeta={rollingMeta}
             downloadCSV={downloadCSV}
           />
         )}

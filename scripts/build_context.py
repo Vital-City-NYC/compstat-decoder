@@ -128,11 +128,28 @@ def measure_revisions(snaps):
 
 
 def ytd_range(snaps, pick):
-    """min / max / latest of a per-snapshot YTD percent change, plus whether it crossed zero."""
+    """min / max / latest of a per-snapshot YTD percent change, plus whether it crossed zero.
+
+    Restricted to the CURRENT calendar year. Year-to-date resets every January, so a 2026
+    year-to-date percentage and a 2027 one describe different windows and comparing them
+    would be meaningless. That also makes the window start move on its own: it is March 1,
+    2026 today only because the upstream archive begins there, and it becomes early
+    January once the archive spans a full year.
+
+    Fewer than three snapshots into a new year there is no range worth quoting, so the
+    result carries n and no min/max and the site falls back to a caution without figures —
+    which is when the caution matters most.
+    """
     vals = [(d, pick(s)) for d, s in snaps]
     vals = [(d, v) for d, v in vals if isinstance(v, (int, float))]
-    if len(vals) < 3:
+    if not vals:
         return None
+    year = vals[-1][0][:4]
+    vals = [(d, v) for d, v in vals if d.startswith(year)]
+    if not vals:
+        return None
+    if len(vals) < 3:
+        return {"n": len(vals), "from": vals[0][0], "year": year, "insufficient": True}
     nums = [v for _, v in vals]
     return {
         "min": round(min(nums), 1),
@@ -142,6 +159,7 @@ def ytd_range(snaps, pick):
         "crossed_zero": min(nums) < 0 < max(nums),
         "n": len(nums),
         "from": vals[0][0],
+        "year": year,
     }
 
 
@@ -197,8 +215,10 @@ def main():
         if r:
             district_vol[str(d["district"])] = r
 
-    precinct_spreads = [v["spread"] for k, v in volatility.items() if k.endswith("Precinct")]
-    flips = sum(1 for k, v in volatility.items() if k.endswith("Precinct") and v["crossed_zero"])
+    precinct_spreads = [v["spread"] for k, v in volatility.items()
+                        if k.endswith("Precinct") and "spread" in v]
+    flips = sum(1 for k, v in volatility.items()
+                if k.endswith("Precinct") and v.get("crossed_zero"))
 
     out = {
         "generated_from": f"{len(snaps)} weekly CompStat snapshots, {snaps[0][0]} to {snaps[-1][0]}",

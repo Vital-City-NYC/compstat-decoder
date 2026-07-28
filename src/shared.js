@@ -390,19 +390,153 @@ export const ProvisionalNote = ({ year, contextData, className = '' }) => (
 /* ------------------------------------------------------------------ */
 export const ytdVolatility = (contextData, key, kind = 'geo') => {
   const src = kind === 'council' ? contextData?.council_ytd_volatility : contextData?.ytd_volatility;
-  const v = src?.[key];
-  // Below ~3 points the range is narrower than the rounding readers see; saying so would
-  // manufacture doubt rather than describe it.
-  if (!v || v.spread < 3) return null;
-  return v;
+  return src?.[key] || null;
 };
 
 // Signed form ("−18.5%") rather than the site's usual "Down 18.5%", which reads badly
 // inside a range.
 const signedPct = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1).replace(/\.0$/, '')}%`;
 
-export const volatilitySentence = (v, noun = 'precinct') =>
-  `Early in the year, "year-to-date" covers only a few weeks, so a handful of incidents swings the percentage hard. As the year fills in, it steadies. This ${noun}'s year-to-date change has ranged from ${signedPct(v.min)} to ${signedPct(v.max)} since ${formatPeriodDate(v.from) || v.from}.`;
+// "March 1, 2026" — the year matters, because this window restarts every January and the
+// start date moves with it.
+export const formatPeriodDateFull = (iso) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
+};
+
+export const VOLATILITY_LABEL = 'Caution about interpreting year-to-date trends:';
+
+export const volatilitySentence = (v, noun = 'precinct') => {
+  const measure = noun === 'district' ? 'year-to-date weighted average' : 'year-to-date change';
+  // Too few weeks into a new year to quote a range — say why the number is unsteady
+  // without inventing figures.
+  if (!v || v.insufficient || v.min == null) {
+    return `Year-to-date has only just restarted for the year, so it covers a handful of weeks and a small number of incidents can swing the percentage hard. It steadies as the year fills in.`;
+  }
+  return `Since ${formatPeriodDateFull(v.from) || v.from}, this ${noun}'s ${measure} has ranged from ${signedPct(v.min)} to ${signedPct(v.max)}. Early in the year the window covers only a few weeks, so a handful of incidents swings the percentage hard; it steadies as the year fills in.`;
+};
+
+/* ------------------------------------------------------------------ */
+/* ROLLING 52-WEEK WINDOW                                              */
+/* Year-to-date is a window whose length changes through the year, so   */
+/* the same percentage means different things in March and October.     */
+/* A trailing 52 weeks against the 52 before it is always the same      */
+/* length, so it stays comparable — Ratcliffe's objection to year-to-   */
+/* date comparisons, answered without leaving CompStat.                 */
+/*                                                                      */
+/* Source is data/weekly_series/master.json, built by                   */
+/* scripts/archive_weekly_series.py from CompStat 2.0's weekly series.  */
+/* Those are NYPD's CURRENT counts for each past week, not the counts   */
+/* published at the time — so past weeks arrive already revised.        */
+/* ------------------------------------------------------------------ */
+export const ROLLING_URL =
+  `https://raw.githubusercontent.com/tedalcorn/${REPO_SELF}/main/data/weekly_series/master.json`;
+
+// CompStat 2.0's metric names -> the names the weekly workbook (and this app) uses.
+const ROLLING_MAJOR = { 'Murder': 'Murder', 'Rape': 'Rape', 'Robbery': 'Robbery',
+  'Fel. Assault': 'Fel. Assault', 'Burglary': 'Burglary', 'Gr. Larceny': 'Gr. Larceny',
+  'G.L.A.': 'G.L.A.' };
+const ROLLING_ADDITIONAL = { 'Transit': 'Transit', 'Housing': 'Housing',
+  'Petit Larceny': 'Petit Larceny', 'Misd. Assault': 'Misd. Assault',
+  'Hate Crimes': 'Hate Crimes', 'Other Sex Crimes': 'Other Sex Crimes',
+  'Rape 1': 'UCR Rape*', 'Sht. Vic.': 'Shooting Vic.', 'Sht. Inc.': 'Shooting Inc.',
+  'Total Fatalities': 'Traffic Fatalities' };
+
+const rollingGeoKey = (archiveKey) =>
+  archiveKey === 'Citywide' ? 'citywide' : toOrdinalPrecinct(parseInt(archiveKey, 10));
+
+// A week absent from a series inside the covered range had a count of zero — the API
+// omits zero weeks rather than returning 0 — so sums must walk the week list, not the keys.
+const windowSum = (series, weeks) => weeks.reduce((t, w) => t + (series?.[w] || 0), 0);
+
+const rollingNode = (series, curWeeks, priWeeks) => {
+  const cur = windowSum(series, curWeeks);
+  const pri = windowSum(series, priWeeks);
+  return {
+    year_to_date: { current_year: cur, prior_year: pri, pct_change: pri ? ((cur - pri) / pri) * 100 : null },
+    week_to_date: { current_year: cur, prior_year: pri, pct_change: pri ? ((cur - pri) / pri) * 100 : null },
+    twenty_eight_day: { current_year: cur, prior_year: pri, pct_change: pri ? ((cur - pri) / pri) * 100 : null },
+    historical: {},
+  };
+};
+
+/** Reshape the weekly archive into the same structure as the live CompStat feed, so every
+ *  downstream table, map and headline reads it without knowing where it came from.
+ *  Patrol boroughs aren't in the archive; they're summed from their precincts, which is
+ *  exact, since a borough is precisely the union of its precincts. */
+export const buildRollingData = (archive) => {
+  const series = archive?.series;
+  if (!series?.Citywide?.TotalMajor7) return null;
+
+  const allWeeks = Object.keys(series.Citywide.TotalMajor7).sort();
+  if (allWeeks.length < 104) return null;
+  const curWeeks = allWeeks.slice(-52);
+  const priWeeks = allWeeks.slice(-104, -52);
+
+  const out = {
+    _rolling: {
+      current_from: curWeeks[0], current_to: curWeeks[curWeeks.length - 1],
+      prior_from: priWeeks[0], prior_to: priWeeks[priWeeks.length - 1],
+      weeks: curWeeks.length,
+    },
+  };
+
+  const boroAccum = {};
+  Object.entries(series).forEach(([archiveKey, metrics]) => {
+    const geo = rollingGeoKey(archiveKey);
+    if (!geo) return;
+    const node = { seven_major_felonies: {}, additional_stats: {} };
+    Object.entries(metrics).forEach(([metric, weekly]) => {
+      if (ROLLING_MAJOR[metric]) node.seven_major_felonies[ROLLING_MAJOR[metric]] = rollingNode(weekly, curWeeks, priWeeks);
+      else if (ROLLING_ADDITIONAL[metric]) node.additional_stats[ROLLING_ADDITIONAL[metric]] = rollingNode(weekly, curWeeks, priWeeks);
+      else if (metric === 'TotalMajor7') node.total_seven_major = rollingNode(weekly, curWeeks, priWeeks);
+    });
+    out[geo] = node;
+
+    if (geo !== 'citywide') {
+      const boro = precinctPatrolBorough(geo);
+      if (!boro) return;
+      boroAccum[boro] = boroAccum[boro] || {};
+      Object.entries(metrics).forEach(([metric, weekly]) => {
+        boroAccum[boro][metric] = boroAccum[boro][metric] || {};
+        Object.entries(weekly).forEach(([w, v]) => {
+          boroAccum[boro][metric][w] = (boroAccum[boro][metric][w] || 0) + v;
+        });
+      });
+    }
+  });
+
+  Object.entries(boroAccum).forEach(([boro, metrics]) => {
+    const node = { seven_major_felonies: {}, additional_stats: {} };
+    Object.entries(metrics).forEach(([metric, weekly]) => {
+      if (ROLLING_MAJOR[metric]) node.seven_major_felonies[ROLLING_MAJOR[metric]] = rollingNode(weekly, curWeeks, priWeeks);
+      else if (ROLLING_ADDITIONAL[metric]) node.additional_stats[ROLLING_ADDITIONAL[metric]] = rollingNode(weekly, curWeeks, priWeeks);
+      else if (metric === 'TotalMajor7') node.total_seven_major = rollingNode(weekly, curWeeks, priWeeks);
+    });
+    out[boro] = node;
+  });
+
+  return out;
+};
+
+/* ------------------------------------------------------------------ */
+/* STALE GEOGRAPHY GUARD                                               */
+/* NYPD publishes one workbook per geography, and they do not always   */
+/* update together — on 2026-07-27 the Bronx patrol-borough file was   */
+/* ten weeks behind every other file, so the site was showing a May    */
+/* figure labelled as current. Each geography carries its own report   */
+/* period, so any lag is detectable rather than silent.                */
+/* ------------------------------------------------------------------ */
+export const staleGeo = (rawData, geo) => {
+  const cw = rawData?.citywide?.report_period?.week_end;
+  const mine = rawData?.[geo]?.report_period?.week_end;
+  if (!cw || !mine || cw === mine) return null;
+  const a = new Date(cw), b = new Date(mine);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime()) || b >= a) return null;
+  return { asOf: mine, current: cw, weeksBehind: Math.round((a - b) / (7 * 864e5)) };
+};
 
 export const renderMarkdown = (node) => {
   if (typeof node === 'string') {
