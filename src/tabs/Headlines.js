@@ -382,16 +382,16 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           })()}
           <div className="divide-y divide-gray-100 border-y border-gray-200">
             {statLines.map((s, i) => (
-              <div key={s.label} className="flex items-baseline flex-wrap gap-x-4 sm:gap-x-7 gap-y-1 py-2.5">
+              <div key={s.label} className="flex items-baseline flex-wrap gap-x-4 sm:gap-x-6 gap-y-1 py-2.5">
                 {/* Descriptor sits light under the term so it reads as its definition */}
-                <div className="w-36 sm:w-52 flex-shrink-0">
+                <div className="w-36 sm:w-40 flex-shrink-0">
                   <div className={i === 0 ? 'text-[15px] font-black leading-tight' : 'text-[13px] font-bold text-gray-700 leading-tight'}>{s.label}</div>
                   <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{s.sub}</div>
                 </div>
                 <span className={`tabular-nums font-black ml-auto sm:ml-0 text-right sm:text-left w-24 sm:w-32 whitespace-nowrap ${i === 0 ? 'text-[16px] sm:text-[20px]' : 'text-[16px]'}`} style={{ color: (s.pct ?? 0) > 0 ? '#c2410c' : (s.pct ?? 0) < 0 ? '#15803d' : '#374151' }}>
                   {dirPct(s.pct)}
                 </span>
-                <span className="text-[12px] text-gray-600 tabular-nums basis-full sm:basis-auto sm:whitespace-nowrap">
+                <span className="text-[12px] sm:text-[11px] text-gray-600 tabular-nums basis-full sm:basis-auto sm:whitespace-nowrap">
                   {s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the year before' : <>{yy(endYear - 1)} {periodWord}</>}
                   <span className="mx-1.5 font-bold" style={{ color: (s.pct ?? 0) > 0 ? '#c2410c' : (s.pct ?? 0) < 0 ? '#15803d' : '#6b7280' }} aria-label={(s.pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
                     {(s.pct ?? 0) > 0 ? '↗' : (s.pct ?? 0) < 0 ? '↘' : '→'}
