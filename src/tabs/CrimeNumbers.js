@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import crimeHistory from '../data/crime_history.json';
 import {
   VC, VOLATILITY_THRESHOLD, offenseClass, expandCrimeTitle, dirPct, signedCount,
-  getHistoricalContext, ContextSparkline, Download,
+  getHistoricalContext, ContextSparkline, Download, ProvisionalNote,
 } from '../shared';
 
 /* ------------------------------------------------------------------ */
@@ -143,6 +143,8 @@ export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouri
 
       <div className="mt-5 text-[11px] font-serif italic text-gray-500 border-t border-gray-100 pt-3">
         * Base sample under 30 (statistically volatile).
+        <span className="mx-1.5 not-italic text-gray-300" aria-hidden>·</span>
+        <ProvisionalNote year={currentYear} className="not-italic" />
       </div>
     </div>
   );

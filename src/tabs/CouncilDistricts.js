@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { geoPath, geoMercator, geoContains } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import councilData from '../data/council_districts.json';
-import vcLogo from '../vitalcity-logo.png';
+// import vcLogo from '../vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
 import SubscribeBand from './Subscribe';
 import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
@@ -650,7 +650,8 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       <div className="hidden print:flex print:flex-col text-black leading-tight" style={{ height: '9.55in', overflow: 'hidden' }}>
         <div className="flex justify-between items-end border-b-[3px] border-black pb-2 mb-3 flex-shrink-0">
           <div className="flex items-end gap-3">
-            <img src={vcLogo} alt="Vital City" style={{ height: '20px', width: 'auto', marginBottom: '4px' }} />
+            {/* VC logo temporarily removed pre-publication — restore <img src={vcLogo} alt="Vital City" style={{ height: '20px', width: 'auto', marginBottom: '4px' }} /> when approved */}
+            <span style={{ display: 'inline-block', height: '20px', width: '96px', marginBottom: '4px' }} aria-hidden="true" />
             <span style={{ width: '1px', height: '26px', background: '#000', marginBottom: '2px' }} />
             <div className="text-[26px] font-black tracking-tight leading-none" style={{ fontFamily: 'system-ui, sans-serif' }}>NYC CompStat Decoder</div>
           </div>
@@ -722,7 +723,8 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
         </div>
         <div className="mt-3 pt-2 border-t border-gray-300 flex justify-between gap-4 text-[8px] text-gray-400 flex-shrink-0" style={{ fontFamily: 'system-ui, sans-serif' }}>
           <span>Sources: NYPD CompStat weekly report; NYC Open Data (complaint &amp; shooting data). Precinct figures are weighted by each precinct's share of the district — a crude approximation, since precincts extend beyond district lines.</span>
-          <span className="whitespace-nowrap">Published by Vital City · vitalcitynyc.org</span>
+          {/* VC mention hidden pre-publication — restore: <span className="whitespace-nowrap">Published by Vital City · vitalcitynyc.org</span> */}
+          <span className="whitespace-nowrap">NYC CompStat Decoder</span>
         </div>
       </div>
     </>

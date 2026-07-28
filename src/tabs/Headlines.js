@@ -6,7 +6,7 @@ import {
   CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
-  calcPct, dirPct,
+  calcPct, dirPct, ProvisionalNote,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
   Download,
 } from '../shared';
@@ -376,8 +376,10 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
               </div>
             ))}
           </div>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 mt-2.5 text-[12px] text-gray-400">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
             <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}` : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
+            <span className="text-gray-300" aria-hidden>·</span>
+            <ProvisionalNote year={endYear} />
           </div>
         </div>
         <LocatorMap activeGeo={activeGeo} onSelectGeo={onSelectGeo} />

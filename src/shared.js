@@ -346,6 +346,30 @@ export const toOrdinalPrecinct = (n) => {
   return num + "th Precinct";
 };
 
+/* ------------------------------------------------------------------ */
+/* PROVISIONAL-DATA NOTE                                               */
+/* Current-year CompStat counts are revised upward as complaints are   */
+/* reclassified; the prior-year comparison has effectively settled.    */
+/* Magnitudes measured from 22 weekly snapshots of the CompStat feed   */
+/* (3/1/26–7/26/26): +3.7% citywide backfill into weeks already        */
+/* reported, against +0.04% for the 2025 baseline over the same span.  */
+/* See John Hall, "The Real Crime Numbers," Vital City.                */
+/* ------------------------------------------------------------------ */
+export const REVISION_URL = 'https://www.vitalcitynyc.org/real-crime-numbers-nyc-nypd/';
+export const REVISION_TOOLTIP =
+  "The NYPD classifies a complaint when it is reported, then revises it as evidence arrives — a hospital exam upgrades a misdemeanor assault to a felony, a medical examiner rules a death a homicide. Across 22 weekly snapshots of this feed, current-year counts grew 3.7% beyond the new weeks being added; the prior-year figures moved 0.04%.";
+
+export const ProvisionalNote = ({ year, className = '' }) => (
+  <span className={`text-gray-400 ${className}`}>
+    <span title={REVISION_TOOLTIP} className="cursor-help decoration-dotted decoration-gray-300 underline underline-offset-[3px]">
+      {year} counts are preliminary
+    </span>
+    {' and typically revise '}
+    <a href={REVISION_URL} target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-700">upward</a>
+    {`; ${year - 1} has settled.`}
+  </span>
+);
+
 export const renderMarkdown = (node) => {
   if (typeof node === 'string') {
     const parts = node.split(/(\*\*.*?\*\*)/g);

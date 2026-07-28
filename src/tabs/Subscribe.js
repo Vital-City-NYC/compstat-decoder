@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import vcLogo from '../vitalcity-logo.png';
+// import vcLogo from '../vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
 import { VC, pctColor, dirPct, expandCrime, formatPeriodDate } from '../shared';
 
 /* ------------------------------------------------------------------ */
@@ -62,7 +62,8 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
     <div className="mt-4 border border-gray-300 rounded-sm shadow-sm overflow-hidden max-w-xl bg-white">
       {/* Email-client chrome */}
       <div className="bg-gray-100 border-b border-gray-300 px-4 py-2.5 text-[11px] text-gray-600 space-y-0.5">
-        <div><span className="font-bold text-gray-500">From:</span> Vital City &lt;hello@vitalcitynyc.org&gt;</div>
+        {/* VC mention hidden pre-publication — restore: <div><span className="font-bold text-gray-500">From:</span> Vital City &lt;hello@vitalcitynyc.org&gt;</div> */}
+        <div><span className="font-bold text-gray-500">From:</span> NYC CompStat Decoder</div>
         <div><span className="font-bold text-gray-500">To:</span> {email}</div>
         <div className="text-[12px] text-black font-bold">{subject}</div>
       </div>
@@ -70,7 +71,8 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
       {/* Email body */}
       <div className="bg-white px-6 py-6">
         <div className="flex items-end justify-between border-b-[3px] border-black pb-3 mb-4">
-          <img src={vcLogo} alt="Vital City" style={{ height: '18px', width: 'auto' }} />
+          {/* VC logo temporarily removed pre-publication — restore <img src={vcLogo} alt="Vital City" style={{ height: '18px', width: 'auto' }} /> when approved */}
+          <span style={{ display: 'inline-block', height: '18px', width: '86px' }} aria-hidden="true" />
           <div className="text-[9px] font-black uppercase tracking-widest text-gray-500">
             District {n} · {cadence} update
           </div>
@@ -137,7 +139,8 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
         <div className="border-t border-gray-200 mt-6 pt-3 text-[10px] text-gray-400 leading-relaxed">
           You're receiving this because you signed up for {cadence.toLowerCase()} updates on Council District {n} at
           the NYC CompStat Decoder. <span className="underline">Unsubscribe</span> · <span className="underline">Manage preferences</span>
-          <br />Vital City · vitalcitynyc.org
+          {/* VC mention hidden pre-publication — restore: <br />Vital City · vitalcitynyc.org */}
+          <br />NYC CompStat Decoder
         </div>
       </div>
     </div>

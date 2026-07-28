@@ -23,7 +23,8 @@ export default function About({ parsedData, fetchError }) {
       <h2 className="text-2xl font-black font-serif mb-6">About this project</h2>
 
       <P>
-        Published by <A href="https://vitalcitynyc.org/">Vital City</A>, an independent New York policy journal.
+        {/* VC mention hidden pre-publication — to restore, put this sentence back at the start of the paragraph:
+            Published by <A href="https://vitalcitynyc.org/">Vital City</A>, an independent New York policy journal. */}
         NYC CompStat Decoder reads the NYPD&rsquo;s weekly CompStat report and puts the week&rsquo;s numbers in
         longer-run and geographic context. The project is open source. Everything on this site traces to one of
         the sources described below; each note says what the data covers, where it comes from, and what was done to it.
@@ -31,9 +32,10 @@ export default function About({ parsedData, fetchError }) {
 
       <H>The CompStat report</H>
       <P>
-        The core source is the NYPD&rsquo;s weekly CompStat 2.0 report, scraped
-        from <A href="https://compstat.nypdonline.org/">compstat.nypdonline.org</A> by an automated pipeline each
-        Monday after the NYPD posts it. The report covers the seven major felonies plus additional offenses
+        The core source is the NYPD&rsquo;s weekly CompStat report, taken from the department&rsquo;s
+        published <A href="https://www.nyc.gov/site/nypd/stats/crime-statistics/compstat.page">CompStat
+        workbooks</A> by an automated pipeline each
+        Monday after the NYPD posts them. The report covers the seven major felonies plus additional offenses
         (shootings, misdemeanor assault, petit larceny, retail theft, hate crimes, and housing totals)
         for the city as a whole, the eight patrol boroughs, and all 77 precincts, with week,
         28-day, and year-to-date comparisons against the same period a year earlier.
@@ -41,6 +43,32 @@ export default function About({ parsedData, fetchError }) {
       <P>
         Nearly every count and percent change on the dashboard comes from this report. If the live feed is
         unreachable, the site falls back to an embedded snapshot of a recent week and says so in the footer below.
+      </P>
+
+      <H>Why the current year&rsquo;s numbers keep changing</H>
+      <P>
+        CompStat counts are, in the NYPD&rsquo;s own words on every report, &ldquo;preliminary and subject to
+        further analysis and revision.&rdquo; A complaint is classified when it is reported and reclassified as
+        evidence arrives: a hospital exam reveals a broken jaw and a misdemeanor assault becomes a felony; a
+        medical examiner rules weeks later that a death was a homicide; a car reported stolen turns out to have
+        been towed. Corrections run overwhelmingly in one direction, because underclassifying a crime causes
+        real operational harm and gets caught, while the reverse mostly does not. John Hall documented the
+        pattern in <A href="https://www.vitalcitynyc.org/real-crime-numbers-nyc-nypd/">The Real Crime
+        Numbers</A>, finding that every one of 95 monthly totals he examined was later revised upward.
+      </P>
+      <P>
+        We measured the effect on this dashboard&rsquo;s own feed. An archive of 22 weekly snapshots
+        (March 1 through July 26, 2026) lets each week&rsquo;s year-to-date total be compared against what it
+        should have been given only the week just added; anything left over is backfill into weeks already
+        published. Citywide, current-year counts ran <strong>3.7 percent above</strong> the sum of the weeks
+        reported, concentrated in murder (roughly a quarter of the year&rsquo;s additions arrived late),
+        burglary and felony assault. Grand larceny auto was the only category to revise downward.
+        Over the same span the 2025 comparison figures moved <strong>0.04 percent</strong>.
+      </P>
+      <P>
+        So: treat the current year as provisional and the prior-year comparison as settled. Small declines
+        early in the year are the least reliable numbers on this site, and a change of a few percent may not
+        survive revision.
       </P>
 
       <H>Historical series, 1993&ndash;2025</H>
@@ -102,8 +130,10 @@ export default function About({ parsedData, fetchError }) {
       <P>
         The &ldquo;30-Year Transformation&rdquo; page draws on the same historical series, plus citywide
         misdemeanor assault counts for 2000&ndash;2024 from the NYPD&rsquo;s historical misdemeanor tables.
-        Its precinct scatterplot pairs precinct poverty rates against per-100,000 offense rates; Vital City
-        has not independently verified those underlying figures, and they should be read as illustrative.
+        {/* VC mention hidden pre-publication — to restore, revert to original wording:
+            "...per-100,000 offense rates; Vital City has not independently verified those underlying figures, and they should be read as illustrative." */}
+        Its precinct scatterplot pairs precinct poverty rates against per-100,000 offense rates; those underlying
+        figures have not been independently verified, and should be read as illustrative.
       </P>
 
       <H>Methodology notes</H>
