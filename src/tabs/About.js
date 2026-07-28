@@ -44,9 +44,16 @@ export default function About({ contextData, parsedData, fetchError }) {
         Monday after the NYPD posts them. The report covers the seven major felonies plus additional offenses
         (shootings, misdemeanor assault, petit larceny, retail theft, hate crimes, and housing totals)
         for the city as a whole, the nine patrol boroughs, and each precinct, with week,
-        28-day, and year-to-date comparisons against the same period a year earlier. The NYPD publishes 78
-        precinct workbooks; this dashboard currently carries 77, having not yet picked up the 116th Precinct in
-        Queens South, which the department added after this pipeline was built.
+        28-day, and year-to-date comparisons against the same period a year earlier.
+      </P>
+      <P>
+        The NYPD publishes 78 precinct workbooks. The 78th is the 116th Precinct, covering Rosedale and
+        Laurelton, which opened in December 2024 out of the 105th and 113th; the department&rsquo;s own CompStat
+        Book still leaves it out of its precinct list, and the upstream feed this page reads has never collected
+        it. The 52-week view is built from a separate weekly series and does include it &mdash; there, the nine
+        patrol boroughs sum to the citywide total exactly. The week and year-to-date views will show it once the
+        upstream feed picks it up. Borough and citywide totals are unaffected either way, since the NYPD&rsquo;s
+        own files already count it.
       </P>
       <P>
         On May 20, 2026 the NYPD divided Patrol Borough Bronx into Bronx North (the 46th, 47th, 48th, 49th, 50th
