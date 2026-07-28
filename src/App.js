@@ -29,9 +29,12 @@ const MAIN_TABS = [
   ['about', 'About'],
 ];
 const TAB_KEYS = ['headlines', ...MAIN_TABS.map(t => t[0])];
-// Tabs where the global geography selector does nothing (they're citywide-only or bring
-// their own selector), and tabs that are year-to-date only (weekly counts unavailable/too small).
-const GEO_INERT_TABS = ['transit', 'precincts', 'council'];
+// The geography selector used to be greyed out on the map tabs, on the reasoning that
+// changing geography did nothing there. But a search box is where people look for a precinct,
+// and being on the precinct map is exactly when they want one — so it stays live everywhere
+// and selectGeo() carries them to that precinct's Headlines, which is what they were after.
+// Kept as a list because a genuinely citywide-only tab may want it back.
+const GEO_INERT_TABS = [];
 // Weekly counts are too small to read at these geographies. The 52-week window is not —
 // it pools a year, so it is available wherever year-to-date is, except on transit.
 const NO_WEEKLY_TABS = ['transit', 'council'];
@@ -192,7 +195,9 @@ export default function App() {
     navigator.geolocation.getCurrentPosition(async (position) => {
       try {
         const { latitude, longitude } = position.coords;
-        const res = await fetch(`https://data.cityofnewyork.us/resource/78dh-3ptz.json?$where=intersects(the_geom, 'POINT(${longitude} ${latitude})')`);
+        // Police Precincts on NYC Open Data. The previous id (78dh-3ptz) was retired and now
+        // 404s, which silently sent every locate-me request to the citywide fallback.
+        const res = await fetch(`https://data.cityofnewyork.us/resource/y76i-bdw7.json?$where=intersects(the_geom, 'POINT(${longitude} ${latitude})')`);
         const data = await res.json();
         if (data && data.length > 0) {
           const pName = toOrdinalPrecinct(data[0].precinct);
