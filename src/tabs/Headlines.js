@@ -354,9 +354,9 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
       {['Bronx North', 'Bronx South'].includes(activeGeo) && (
         <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)', borderColor: '#b45309' }}>
           <strong className="font-black">A new command.</strong> The NYPD divided Patrol Borough Bronx into
-          Bronx North and Bronx South on May 20, 2026. Precinct boundaries did not change, so the figures here —
-          including the stretch before the split, and the 52-week window, which spans it — are summed from the six
-          precincts assigned to this command.
+          Bronx North and Bronx South on May 20, 2026. Precinct boundaries did not change, so the department
+          restated both commands across the whole period rather than starting them in May: the figures here cover
+          the full span, including the weeks before the split and the 52-week window that straddles it.
         </div>
       )}
       {rollingUnavailable && (

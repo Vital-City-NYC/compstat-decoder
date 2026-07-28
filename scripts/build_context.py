@@ -30,9 +30,16 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-REPO = "joshgreenman1973/nypd-compstat-scraper"
-INDEX_URL = f"https://raw.githubusercontent.com/{REPO}/main/data/index.json"
-ARCHIVE_URL = f"https://raw.githubusercontent.com/{REPO}/main/data/" + "{path}"
+# Revisions can only be measured against what the NYPD published at the time, so this needs a
+# record of past weeks as-published. We keep our own (scripts/scrape_compstat.py archives one
+# every run), but it only starts the day we began collecting. The upstream scraper has been
+# archiving since 2026-03-01, so its older snapshots are still read to cover the earlier weeks.
+# Ours wins wherever both have a date. Once our archive spans the window we care about, the
+# fallback can be deleted outright.
+LOCAL_ARCHIVE = Path(__file__).resolve().parent.parent / "data"
+FALLBACK_REPO = "joshgreenman1973/nypd-compstat-scraper"
+INDEX_URL = f"https://raw.githubusercontent.com/{FALLBACK_REPO}/main/data/index.json"
+ARCHIVE_URL = f"https://raw.githubusercontent.com/{FALLBACK_REPO}/main/data/" + "{path}"
 
 MAJOR7 = ["Murder", "Rape", "Robbery", "Fel. Assault", "Burglary", "Gr. Larceny", "G.L.A."]
 ROOT = Path(__file__).resolve().parent.parent
@@ -45,21 +52,31 @@ def fetch_json(url, timeout=60):
 
 
 def load_snapshots():
-    """Pull every archived weekly snapshot, oldest first."""
-    index = fetch_json(INDEX_URL)
-    entries = sorted(index, key=lambda e: e["date"])
-    print(f"  index lists {len(entries)} weekly snapshots "
-          f"({entries[0]['date']} -> {entries[-1]['date']})", flush=True)
+    """Pull every archived weekly snapshot, oldest first — ours first, upstream for the rest."""
+    local = {p.stem: p for p in sorted((LOCAL_ARCHIVE / "archive").glob("*.json"))}
+    try:
+        remote = {e["date"]: e for e in fetch_json(INDEX_URL) if e["date"] not in local}
+    except (urllib.error.URLError, json.JSONDecodeError) as exc:
+        print(f"  ! upstream archive unreachable ({exc}); using local snapshots only",
+              file=sys.stderr)
+        remote = {}
+    dates = sorted(set(local) | set(remote))
+    if not dates:
+        raise SystemExit("No weekly snapshots available from either archive.")
+    print(f"  {len(dates)} weekly snapshots ({dates[0]} -> {dates[-1]}): "
+          f"{len(local)} local, {len(remote)} upstream", flush=True)
 
-    def one(e):
+    def one(date):
+        if date in local:
+            return date, json.loads(local[date].read_text())
         try:
-            return e["date"], fetch_json(ARCHIVE_URL.format(path=e["path"]))
+            return date, fetch_json(ARCHIVE_URL.format(path=remote[date]["path"]))
         except (urllib.error.URLError, json.JSONDecodeError) as exc:
-            print(f"  ! {e['date']}: {exc}", file=sys.stderr)
-            return e["date"], None
+            print(f"  ! {date}: {exc}", file=sys.stderr)
+            return date, None
 
     with ThreadPoolExecutor(max_workers=6) as pool:
-        got = list(pool.map(one, entries))
+        got = list(pool.map(one, dates))
     snaps = [(d, s) for d, s in got if s]
     for i, (d, _) in enumerate(snaps, 1):
         if i % 5 == 0 or i == len(snaps):

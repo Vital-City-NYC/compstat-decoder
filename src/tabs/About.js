@@ -38,33 +38,34 @@ export default function About({ contextData, parsedData, fetchError }) {
 
       <H>The CompStat report</H>
       <P>
-        The core source is the NYPD&rsquo;s weekly CompStat report, taken from the department&rsquo;s
+        The core source is the NYPD&rsquo;s weekly CompStat report, downloaded directly from the department&rsquo;s
         published <A href="https://www.nyc.gov/site/nypd/stats/crime-statistics/compstat.page">CompStat
-        workbooks</A> by an automated pipeline each
-        Monday after the NYPD posts them. The report covers the seven major felonies plus additional offenses
-        (shootings, misdemeanor assault, petit larceny, retail theft, hate crimes, and housing totals)
-        for the city as a whole, the nine patrol boroughs, and each precinct, with week,
-        28-day, and year-to-date comparisons against the same period a year earlier.
+        workbooks</A> each Monday after the NYPD posts them &mdash; 88 spreadsheets covering the city as a whole,
+        the nine patrol boroughs, and all 78 precincts, with week, 28-day, and year-to-date comparisons against
+        the same period a year earlier, plus shootings, misdemeanor assault, petit larceny, retail theft, hate
+        crimes and housing totals. Nothing sits between those files and this page.
       </P>
       <P>
-        The NYPD publishes 78 precinct workbooks. The 78th is the 116th Precinct, covering Rosedale and
-        Laurelton, which opened in December 2024 out of the 105th and 113th; the department&rsquo;s own CompStat
-        Book still leaves it out of its precinct list, and the upstream feed this page reads has never collected
-        it. The 52-week view is built from a separate weekly series and does include it &mdash; there, the nine
-        patrol boroughs sum to the citywide total exactly. The week and year-to-date views will show it once the
-        upstream feed picks it up. Borough and citywide totals are unaffected either way, since the NYPD&rsquo;s
-        own files already count it.
+        Reading the NYPD&rsquo;s files has one trap worth naming, since it caught this dashboard. When a command
+        is retired, its workbook is not always removed. The NYPD divided Patrol Borough Bronx into Bronx North
+        (the 46th, 47th, 48th, 49th, 50th and 52nd precincts) and Bronx South (the 40th through 45th) on
+        May 20, 2026, and now publishes a workbook for each &mdash; but the old combined file is still sitting at
+        its old address, still answering successfully, still serving the last report it ever carried, for the week
+        ending May 17, 2026. A pipeline that only checks whether a file is missing will read those numbers and
+        present them as current. So every workbook is now checked against the citywide report period, and a
+        lagging file stops the update rather than passing through it.
       </P>
       <P>
-        On May 20, 2026 the NYPD divided Patrol Borough Bronx into Bronx North (the 46th, 47th, 48th, 49th, 50th
-        and 52nd precincts) and Bronx South (the 40th through 45th), and now publishes a workbook for each. The
-        retired combined file was never taken down, and still answers with the last report it ever carried, for
-        the week ending May 17, 2026. This dashboard therefore builds both commands from their own precincts
-        instead, which are unaffected by the reorganization &mdash; so the two series run unbroken through the
-        split rather than beginning in May. Bronx North matches the NYPD&rsquo;s published workbook exactly.
-        Bronx South comes to 87 complaints less year to date, because the NYPD&rsquo;s borough file counts a
-        block of complaints that no Bronx South precinct does; the same 87 is the entire difference between the
-        citywide workbook and the sum of all 78 precinct files. The workbooks do not say what it represents.
+        Because precinct boundaries did not change, the NYPD restated both Bronx commands across the whole
+        period rather than starting them in May, back through the historical tables to 1990. The figures here
+        cover the full span, including the weeks before the split.
+      </P>
+      <P>
+        One figure does not reconcile, and it is the NYPD&rsquo;s, not ours. Bronx South&rsquo;s workbook counts
+        87 more complaints year to date than its six precincts do, and that same 87 is the entire difference
+        between the citywide workbook and the sum of all 78 precinct files. Bronx North matches its precincts
+        exactly, as did the old combined Bronx file. The gap appears only in 2025 and 2026 &mdash; the 1990, 1993,
+        1998 and 2001 rows all match to the digit. The workbooks do not say what it represents.
       </P>
       <P>
         Nearly every count and percent change on the dashboard comes from this report. If the live feed is

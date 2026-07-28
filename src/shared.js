@@ -126,11 +126,13 @@ export const K7 = ['BU','FA','GA','GL','MU','RA','RO'];
 export const CC = {BU:'#394882',FA:'#e7466d',GA:'#9b9fbc',GL:'#ff7c53',MU:'#050507',RA:'#cea9be',RO:'#217ebe'};
 export const CL = {BU:'Burglary',FA:'Fel. Assault',GA:'Grand Larceny Auto',GL:'Grand Larceny',MU:'Murder',RA:'Rape',RO:'Robbery'};
 
-export const GITHUB_USER = "joshgreenman1973";
-export const REPO_NAME = "nypd-compstat-scraper";
-// This dashboard's own repo, which hosts data/context.json (revision + volatility figures
-// regenerated weekly by scripts/build_context.py) and data/weekly_series/master.json.
+// This dashboard's own repo. It hosts every file the page reads: data/latest_compstat.json
+// (the weekly CompStat report, scraped from the NYPD's own workbooks by
+// scripts/scrape_compstat.py), data/context.json (revision + volatility figures from
+// scripts/build_context.py) and data/weekly_series/master.json.
 export const REPO_SELF = "compstat-decoder";
+export const GITHUB_USER = "tedalcorn";
+export const REPO_NAME = REPO_SELF;
 export const CITYWIDE_POPULATION = 8804190; // 2020 Census
 export const VOLATILITY_THRESHOLD = 30;
 
@@ -452,85 +454,6 @@ export const volatilitySentence = (v, noun = 'precinct') => {
 /* ------------------------------------------------------------------ */
 export const ROLLING_URL =
   `https://raw.githubusercontent.com/tedalcorn/${REPO_SELF}/main/data/rolling.json`;
-
-/* ------------------------------------------------------------------ */
-/* THE TWO BRONX COMMANDS                                              */
-/*                                                                      */
-/* NYPD split Patrol Borough Bronx into Bronx North and Bronx South on  */
-/* May 20, 2026 and now publishes a workbook for each. The upstream     */
-/* scraper still asks for the retired combined file, cs-en-us-pbbx.xlsx */
-/* — which NYPD never took down, so it answers 200 with the last        */
-/* pre-split report (week ending 5/17/2026) instead of 404ing. A stale  */
-/* file that returns success is invisible to a missing-file check, so   */
-/* the feed's "Bronx" node is frozen in May.                            */
-/*                                                                      */
-/* Rather than trust it, both commands are rebuilt here from their own  */
-/* precincts, which are current and unchanged by the reorganization.    */
-/* Bronx North reproduces NYPD's published workbook exactly. Bronx      */
-/* South lands 87 complaints below NYPD's (7,424 vs 7,511 year to date  */
-/* on 7/26/2026): NYPD's borough file carries complaints not charged to */
-/* any of its six precincts. That block is the whole of the difference  */
-/* between the citywide workbook and the sum of all 78 precinct files,  */
-/* it is absent before 2025, and NYPD has been asked what it is.        */
-/* ------------------------------------------------------------------ */
-const BRONX_COMMANDS = ['Bronx South', 'Bronx North'];
-
-const sumWindow = (nodes, window) => {
-  let cur = 0, pri = 0, seen = false;
-  for (const n of nodes) {
-    const w = n?.[window];
-    if (!w) continue;
-    seen = true;
-    cur += safeNum(w.current_year) || 0;
-    pri += safeNum(w.prior_year) || 0;
-  }
-  if (!seen) return null;
-  return { current_year: cur, prior_year: pri, pct_change: pri ? ((cur - pri) / pri) * 100 : null };
-};
-
-// Long-run percentages (2/16/33 year) can't be added up, and the feed carries no
-// precinct-level base counts to rebuild them from, so they are left out rather than
-// approximated — the app already renders a dash where a series has no deep history.
-const sumMetric = (nodes) => {
-  const out = {};
-  for (const w of ['week_to_date', 'twenty_eight_day', 'year_to_date']) {
-    const s = sumWindow(nodes, w);
-    if (s) out[w] = s;
-  }
-  out.historical = {};
-  return out;
-};
-
-export const deriveBronxCommands = (raw) => {
-  if (!raw || typeof raw !== 'object') return raw;
-  const out = { ...raw };
-  for (const boro of BRONX_COMMANDS) {
-    const members = (PATROL_BOROUGHS[boro] || [])
-      .map(n => raw[toOrdinalPrecinct(n)])
-      .filter(Boolean);
-    // If the precincts aren't there, leave the feed alone rather than invent a borough.
-    if (members.length !== (PATROL_BOROUGHS[boro] || []).length) return raw;
-
-    const rec = {
-      source: 'Summed from precinct workbooks (see About)',
-      report_period: members[0].report_period,
-      seven_major_felonies: {},
-      additional_stats: {},
-    };
-    const total = sumMetric(members.map(m => m.total_seven_major));
-    if (total) rec.total_seven_major = total;
-    for (const group of ['seven_major_felonies', 'additional_stats']) {
-      const names = new Set();
-      members.forEach(m => Object.keys(m[group] || {}).forEach(k => names.add(k)));
-      for (const name of names) {
-        rec[group][name] = sumMetric(members.map(m => m[group]?.[name]));
-      }
-    }
-    out[boro] = rec;
-  }
-  delete out['Bronx'];   // retired May 20, 2026 — never show the frozen combined file
-  return out;
-};
 
 /* ------------------------------------------------------------------ */
 /* STALE GEOGRAPHY GUARD                                               */
