@@ -3,7 +3,7 @@ import { geoPath, geoMercator } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import {
   GEO_POPULATIONS, PRECINCT_NEIGHBORHOODS, VC,
-  crimeColor, changeColor, TrendingUp, TrendingDown,
+  crimeColor, changeColor, formatRate, TrendingUp, TrendingDown,
 } from '../shared';
 
 /* ------------------------------------------------------------------ */
@@ -65,10 +65,15 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
           .map(feature => {
           const pNum = feature.properties.precinct;
           const pData = rateMap[pNum];
-          // Tourist precincts show their actual color; the hatch overlay flags them visually
-          // and the tooltip notes that rate is distorted by visitor population. % change is
-          // NOT distorted by daytime population, so it stays in rankings.
+          // Central Park (22nd), Midtown South (14th) and Midtown North (18th) have daytime
+          // populations many times their residential ones, so a per-resident rate there is
+          // not a comparable quantity — colouring it invites exactly the comparison it can't
+          // support. In rate mode they stay grey, hatched to mark deliberate exclusion rather
+          // than missing data, and the tooltip still gives the figure. Percent change is NOT
+          // distorted by daytime population, so in change mode they colour normally.
+          const rateUncomparable = mapMode === 'rate' && pData?.isTourist;
           const fill = mapMode === 'change' ? changeColor(pData?.pctChange, maxAbsChange)
+            : rateUncomparable ? '#e5e7eb'
             : crimeColor(pData?.rate, minRate, maxRate);
           const isActive = activeHover === pNum;
           return (
@@ -83,7 +88,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
                 onMouseLeave={() => { setHovered(null); onHover && onHover(null); }}
                 onClick={() => pData && onSelect(pData.precinct)}
               />
-              {pData?.isTourist && (
+              {rateUncomparable && (
                 <path d={pathFn(feature)} fill="url(#tourist-hatch)" stroke="none" pointerEvents="none" />
               )}
             </g>
@@ -106,7 +111,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
             <div className="font-bold text-black">{hoveredData.count.toLocaleString()} incidents</div>
             {hoveredData.rate != null && (
               <div className="text-gray-600">
-                {hoveredData.rate.toFixed(1)} per 100k
+                {formatRate(hoveredData.rate)} per 100k
                 {hoveredData.isTourist ? <span className="text-gray-400 italic"> (residents only — not comparable)</span> : rankInfo ? ` · Rank ${rankInfo.rank} of ${rankInfo.total}` : ''}
               </div>
             )}
@@ -138,7 +143,9 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
         )}
         <span className="ml-3 pl-3 border-l border-gray-300 flex items-center gap-1" title="Tourist/commercial precincts: per-100k rates use residential population only and are not comparable. % change is not distorted.">
           <span className="inline-block w-3 h-3" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(31,41,55,0.5) 2px, rgba(31,41,55,0.5) 3px)' }} />
-          Tourist hubs: 14th, 18th, 22nd {mapMode === 'rate' && <span className="italic text-gray-400">(rate distorted)</span>}
+          Tourist hubs: 14th, 18th, 22nd {mapMode === 'rate'
+            ? <span className="italic text-gray-400">(few residents — no comparable rate)</span>
+            : <span className="italic text-gray-400">(% change is comparable)</span>}
         </span>
       </div>
     </div>
@@ -173,7 +180,7 @@ const PrecinctRankingBars = ({ precinctRates, onSelect, mapMode = 'rate', hovere
     const barPct = Math.max(3, (val / (maxVal || 1)) * 100);
     const hood = PRECINCT_NEIGHBORHOODS[item.precinct];
     const label = hood ? `${item.precinct.replace(' Precinct', '')} (${hood.split(',')[0]})` : item.precinct.replace(' Precinct', '');
-    const displayVal = mapMode === 'change' ? `${Math.abs(item.pctChange).toFixed(1).replace(/\.0$/, '')}%` : item.rate.toFixed(0);
+    const displayVal = mapMode === 'change' ? `${Math.abs(item.pctChange).toFixed(1).replace(/\.0$/, '')}%` : formatRate(item.rate);
     const isActive = hoveredPrecinctNum === item.precinctNum;
     const nameEl = (
       <span className="text-[11px] font-bold text-gray-800 w-28 truncate flex-shrink-0 flex items-center gap-1" title={item.precinct}>

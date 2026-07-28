@@ -284,6 +284,13 @@ const PERSON_OFFENSES = new Set(['Murder', 'Rape', 'Robbery', 'Fel. Assault', 'M
 const PROPERTY_OFFENSES = new Set(['Burglary', 'Gr. Larceny', 'G.L.A.', 'Petit Larceny', 'Retail Theft']);
 export const offenseClass = (name) => PERSON_OFFENSES.has(name) ? 'Person' : PROPERTY_OFFENSES.has(name) ? 'Property' : null;
 
+// Rates per 100k: a tenth of a point is meaningful at 4.2, noise at 406. Drop the decimal
+// once the value reaches three figures.
+export const formatRate = (v) => {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return '—';
+  return v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(1).replace(/\.0$/, '');
+};
+
 export const formatPop = (n) => {
   if (!n) return '0';
   if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';

@@ -4,7 +4,7 @@ import crimeHistory from '../data/crime_history.json';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import {
   CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
-  formatPop, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
+  formatPop, formatRate, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
   calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDateFull, staleGeo,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
@@ -166,7 +166,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
                 <div className={`h-full rounded-sm ${isNYC ? 'bg-gray-900' : 'bg-gray-400'}`} style={{ width: `${barW}%` }} />
               </div>
               <span className={`w-12 text-[11px] tabular-nums ${isNYC ? 'font-black text-gray-900' : 'font-medium text-gray-500'}`}>
-                {c.rate.toLocaleString()}
+                {formatRate(c.rate)}
               </span>
             </div>
           );
@@ -293,7 +293,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
       return '';
     };
     if (localAnomaly) {
-      bullets.push(`**The most elevated crime vs. the citywide average is ${expandCrime(localAnomaly.name)}:** ${localAnomaly.localRate.toFixed(1)} per 100k residents here, ${localAnomaly.ratio.toFixed(1)}x the citywide rate (${localAnomaly.cityRate.toFixed(1)}).${buckNote(localAnomaly.name)}`);
+      bullets.push(`**The most elevated crime vs. the citywide average is ${expandCrime(localAnomaly.name)}:** ${formatRate(localAnomaly.localRate)} per 100k residents here, ${localAnomaly.ratio.toFixed(1)}x the citywide rate (${formatRate(localAnomaly.cityRate)}).${buckNote(localAnomaly.name)}`);
     }
     if (localBrightSpot) {
       bullets.push(`**The brightest spot vs. the citywide average is ${expandCrime(localBrightSpot.name)}:** the rate here sits ${Math.round((1 - localBrightSpot.ratio) * 100)}% below the citywide rate.${buckNote(localBrightSpot.name)}`);
