@@ -389,11 +389,11 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
                   {dirPct(s.pct)}
                 </span>
                 <span className="text-[12px] sm:text-[13px] text-gray-600 tabular-nums basis-full sm:basis-auto">
-                  {s.pri.toLocaleString()} in {yy(endYear - 1)} {periodWord}
+                  {s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the prior 52 wks' : <>{yy(endYear - 1)} {periodWord}</>}
                   <span className="mx-1.5 font-bold" style={{ color: (s.pct ?? 0) > 0 ? '#c2410c' : (s.pct ?? 0) < 0 ? '#15803d' : '#6b7280' }} aria-label={(s.pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
                     {(s.pct ?? 0) > 0 ? '↗' : (s.pct ?? 0) < 0 ? '↘' : '→'}
                   </span>
-                  <strong className="font-black text-gray-900">{s.cur.toLocaleString()} in {yy(endYear)} {periodWord}</strong>
+                  <strong className="font-black text-gray-900">{s.cur.toLocaleString()} in {activeTab === 'r52' ? 'the last 52 wks' : <>{yy(endYear)} {periodWord}</>}</strong>
                 </span>
               </div>
             ))}
