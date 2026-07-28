@@ -1,0 +1,1297 @@
+{
+ "generated_from": "22 weekly CompStat snapshots, 2026-03-01 to 2026-07-26",
+ "window_start": "2026-03-01",
+ "window_end": "2026-07-26",
+ "n_snapshots": 22,
+ "revisions": {
+  "by_offense": {
+   "Murder": {
+    "added": 116,
+    "backfill": 28,
+    "pct": 24.14
+   },
+   "Rape": {
+    "added": 889,
+    "backfill": 18,
+    "pct": 2.02
+   },
+   "Robbery": {
+    "added": 5492,
+    "backfill": 157,
+    "pct": 2.86
+   },
+   "Fel. Assault": {
+    "added": 12875,
+    "backfill": 856,
+    "pct": 6.65
+   },
+   "Burglary": {
+    "added": 4477,
+    "backfill": 379,
+    "pct": 8.47
+   },
+   "Gr. Larceny": {
+    "added": 18439,
+    "backfill": 382,
+    "pct": 2.07
+   },
+   "G.L.A.": {
+    "added": 5032,
+    "backfill": -52,
+    "pct": -1.03
+   }
+  },
+  "citywide_added": 47320,
+  "citywide_backfill": 1768,
+  "citywide_pct": 3.74,
+  "prior_year_added": 50664,
+  "prior_year_backfill": 19,
+  "prior_year_pct": 0.04,
+  "largest_upward": "Murder",
+  "only_downward": [
+   "G.L.A."
+  ]
+ },
+ "ytd_volatility": {
+  "Manhattan South": {
+   "min": -9.3,
+   "max": -5.7,
+   "latest": -5.7,
+   "spread": 3.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "Manhattan North": {
+   "min": -7.3,
+   "max": -5.1,
+   "latest": -7.1,
+   "spread": 2.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "Bronx": {
+   "min": -11.0,
+   "max": -9.6,
+   "latest": -11.0,
+   "spread": 1.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "Brooklyn South": {
+   "min": -6.9,
+   "max": -5.5,
+   "latest": -5.6,
+   "spread": 1.5,
+   "crossed_zero": false,
+   "n": 10,
+   "from": "2026-05-24"
+  },
+  "Brooklyn North": {
+   "min": -6.7,
+   "max": -2.5,
+   "latest": -6.7,
+   "spread": 4.2,
+   "crossed_zero": false,
+   "n": 10,
+   "from": "2026-05-24"
+  },
+  "Queens South": {
+   "min": -4.6,
+   "max": 3.4,
+   "latest": 2.3,
+   "spread": 8.0,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "Queens North": {
+   "min": -5.3,
+   "max": -1.8,
+   "latest": -1.9,
+   "spread": 3.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "Staten Island": {
+   "min": -15.3,
+   "max": 0.3,
+   "latest": -0.7,
+   "spread": 15.6,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "1st Precinct": {
+   "min": -5.4,
+   "max": 3.4,
+   "latest": 3.4,
+   "spread": 8.8,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "5th Precinct": {
+   "min": 6.6,
+   "max": 18.2,
+   "latest": 11.7,
+   "spread": 11.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "6th Precinct": {
+   "min": -10.0,
+   "max": -2.4,
+   "latest": -10.0,
+   "spread": 7.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "7th Precinct": {
+   "min": -3.2,
+   "max": 6.6,
+   "latest": 2.1,
+   "spread": 9.8,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "9th Precinct": {
+   "min": -25.4,
+   "max": -17.8,
+   "latest": -17.8,
+   "spread": 7.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "10th Precinct": {
+   "min": -29.8,
+   "max": -6.4,
+   "latest": -6.4,
+   "spread": 23.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "13th Precinct": {
+   "min": -6.4,
+   "max": 10.7,
+   "latest": -5.5,
+   "spread": 17.1,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "14th Precinct": {
+   "min": -19.7,
+   "max": -10.2,
+   "latest": -10.5,
+   "spread": 9.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "17th Precinct": {
+   "min": -12.4,
+   "max": 9.5,
+   "latest": -12.4,
+   "spread": 21.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "18th Precinct": {
+   "min": -12.6,
+   "max": -6.5,
+   "latest": -6.5,
+   "spread": 6.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "19th Precinct": {
+   "min": -16.8,
+   "max": -6.7,
+   "latest": -16.2,
+   "spread": 10.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "20th Precinct": {
+   "min": 6.8,
+   "max": 20.5,
+   "latest": 7.6,
+   "spread": 13.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "22nd Precinct": {
+   "min": 9.1,
+   "max": 31.6,
+   "latest": 31.6,
+   "spread": 22.5,
+   "crossed_zero": false,
+   "n": 5,
+   "from": "2026-06-28"
+  },
+  "23rd Precinct": {
+   "min": -27.6,
+   "max": -16.3,
+   "latest": -16.3,
+   "spread": 11.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "24th Precinct": {
+   "min": -2.3,
+   "max": 9.0,
+   "latest": 6.1,
+   "spread": 11.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "25th Precinct": {
+   "min": -28.2,
+   "max": -19.3,
+   "latest": -21.1,
+   "spread": 8.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "26th Precinct": {
+   "min": -21.8,
+   "max": 1.1,
+   "latest": -10.0,
+   "spread": 22.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "28th Precinct": {
+   "min": -9.1,
+   "max": 15.5,
+   "latest": -9.1,
+   "spread": 24.7,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "30th Precinct": {
+   "min": -16.3,
+   "max": 1.3,
+   "latest": -1.3,
+   "spread": 17.6,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "32nd Precinct": {
+   "min": -18.1,
+   "max": 3.2,
+   "latest": 0.5,
+   "spread": 21.3,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "33rd Precinct": {
+   "min": -8.5,
+   "max": 17.7,
+   "latest": -8.5,
+   "spread": 26.1,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "34th Precinct": {
+   "min": -9.9,
+   "max": 4.7,
+   "latest": -0.5,
+   "spread": 14.6,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "40th Precinct": {
+   "min": -9.0,
+   "max": 2.3,
+   "latest": -7.9,
+   "spread": 11.3,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "41st Precinct": {
+   "min": -28.3,
+   "max": -22.8,
+   "latest": -26.5,
+   "spread": 5.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "42nd Precinct": {
+   "min": -20.8,
+   "max": -15.3,
+   "latest": -20.2,
+   "spread": 5.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "43rd Precinct": {
+   "min": -24.8,
+   "max": -21.1,
+   "latest": -24.4,
+   "spread": 3.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "44th Precinct": {
+   "min": -18.2,
+   "max": -8.4,
+   "latest": -10.3,
+   "spread": 9.8,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "45th Precinct": {
+   "min": -22.1,
+   "max": -3.3,
+   "latest": -22.1,
+   "spread": 18.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "46th Precinct": {
+   "min": 2.0,
+   "max": 12.2,
+   "latest": 8.3,
+   "spread": 10.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "47th Precinct": {
+   "min": -19.2,
+   "max": -5.2,
+   "latest": -18.4,
+   "spread": 14.0,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "48th Precinct": {
+   "min": -12.5,
+   "max": -6.0,
+   "latest": -12.5,
+   "spread": 6.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "49th Precinct": {
+   "min": -22.6,
+   "max": -7.2,
+   "latest": -8.3,
+   "spread": 15.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "50th Precinct": {
+   "min": -11.7,
+   "max": 3.0,
+   "latest": -7.9,
+   "spread": 14.7,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "52nd Precinct": {
+   "min": -5.2,
+   "max": 1.9,
+   "latest": -5.2,
+   "spread": 7.1,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "60th Precinct": {
+   "min": 3.6,
+   "max": 27.1,
+   "latest": 5.0,
+   "spread": 23.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "61st Precinct": {
+   "min": -12.3,
+   "max": -3.8,
+   "latest": -7.3,
+   "spread": 8.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "62nd Precinct": {
+   "min": -5.1,
+   "max": 9.5,
+   "latest": -0.9,
+   "spread": 14.6,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "63rd Precinct": {
+   "min": -12.3,
+   "max": 0.7,
+   "latest": -0.2,
+   "spread": 13.0,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "66th Precinct": {
+   "min": -10.7,
+   "max": 0.5,
+   "latest": -4.1,
+   "spread": 11.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "67th Precinct": {
+   "min": -21.7,
+   "max": -14.6,
+   "latest": -14.6,
+   "spread": 7.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "68th Precinct": {
+   "min": 0.4,
+   "max": 25.4,
+   "latest": 2.0,
+   "spread": 25.0,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "69th Precinct": {
+   "min": 4.1,
+   "max": 17.9,
+   "latest": 10.5,
+   "spread": 13.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "70th Precinct": {
+   "min": -33.3,
+   "max": -23.8,
+   "latest": -28.3,
+   "spread": 9.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "71st Precinct": {
+   "min": -2.9,
+   "max": 9.5,
+   "latest": -2.6,
+   "spread": 12.4,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "72nd Precinct": {
+   "min": -3.8,
+   "max": 5.0,
+   "latest": -0.6,
+   "spread": 8.8,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "73rd Precinct": {
+   "min": -15.6,
+   "max": 12.8,
+   "latest": -14.3,
+   "spread": 28.4,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "75th Precinct": {
+   "min": -8.9,
+   "max": -3.7,
+   "latest": -8.9,
+   "spread": 5.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "76th Precinct": {
+   "min": -11.9,
+   "max": 2.1,
+   "latest": -4.8,
+   "spread": 14.0,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "77th Precinct": {
+   "min": -12.8,
+   "max": -0.7,
+   "latest": -12.8,
+   "spread": 12.0,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "78th Precinct": {
+   "min": -17.8,
+   "max": -1.6,
+   "latest": -2.9,
+   "spread": 16.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "79th Precinct": {
+   "min": -7.4,
+   "max": 13.6,
+   "latest": -4.4,
+   "spread": 21.1,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "81st Precinct": {
+   "min": 2.7,
+   "max": 17.4,
+   "latest": 2.7,
+   "spread": 14.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "83rd Precinct": {
+   "min": 25.0,
+   "max": 37.5,
+   "latest": 25.0,
+   "spread": 12.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "84th Precinct": {
+   "min": -14.8,
+   "max": -9.3,
+   "latest": -13.2,
+   "spread": 5.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "88th Precinct": {
+   "min": -23.6,
+   "max": -11.5,
+   "latest": -21.6,
+   "spread": 12.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "90th Precinct": {
+   "min": -3.9,
+   "max": 20.1,
+   "latest": -3.6,
+   "spread": 24.0,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "94th Precinct": {
+   "min": -22.2,
+   "max": -13.8,
+   "latest": -17.2,
+   "spread": 8.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "100th Precinct": {
+   "min": -9.1,
+   "max": 13.2,
+   "latest": -7.4,
+   "spread": 22.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "101st Precinct": {
+   "min": -8.1,
+   "max": 12.6,
+   "latest": -4.0,
+   "spread": 20.7,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "102nd Precinct": {
+   "min": -3.6,
+   "max": 9.5,
+   "latest": 9.0,
+   "spread": 13.1,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "103rd Precinct": {
+   "min": -6.6,
+   "max": 7.9,
+   "latest": 3.8,
+   "spread": 14.5,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "104th Precinct": {
+   "min": 0.2,
+   "max": 23.3,
+   "latest": 8.4,
+   "spread": 23.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "105th Precinct": {
+   "min": -17.6,
+   "max": -4.2,
+   "latest": -8.6,
+   "spread": 13.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "106th Precinct": {
+   "min": -8.8,
+   "max": 12.4,
+   "latest": 4.2,
+   "spread": 21.3,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "107th Precinct": {
+   "min": -19.5,
+   "max": 1.8,
+   "latest": 1.3,
+   "spread": 21.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "108th Precinct": {
+   "min": 5.0,
+   "max": 19.5,
+   "latest": 6.5,
+   "spread": 14.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "109th Precinct": {
+   "min": -17.4,
+   "max": -7.5,
+   "latest": -10.4,
+   "spread": 9.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "110th Precinct": {
+   "min": -13.3,
+   "max": 4.6,
+   "latest": 3.5,
+   "spread": 17.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "111th Precinct": {
+   "min": -6.8,
+   "max": 10.8,
+   "latest": -6.8,
+   "spread": 17.6,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "112th Precinct": {
+   "min": -6.2,
+   "max": 19.3,
+   "latest": 18.9,
+   "spread": 25.5,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "113th Precinct": {
+   "min": 15.8,
+   "max": 32.1,
+   "latest": 20.3,
+   "spread": 16.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "114th Precinct": {
+   "min": -9.4,
+   "max": -1.3,
+   "latest": -6.9,
+   "spread": 8.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "115th Precinct": {
+   "min": -20.9,
+   "max": -12.3,
+   "latest": -13.4,
+   "spread": 8.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "120th Precinct": {
+   "min": -17.4,
+   "max": 1.6,
+   "latest": -5.4,
+   "spread": 18.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "121st Precinct": {
+   "min": -19.2,
+   "max": 7.0,
+   "latest": 5.1,
+   "spread": 26.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "122nd Precinct": {
+   "min": -10.4,
+   "max": -3.1,
+   "latest": -4.2,
+   "spread": 7.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "123rd Precinct": {
+   "min": -18.5,
+   "max": 10.6,
+   "latest": 5.1,
+   "spread": 29.1,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "citywide": {
+   "min": -6.5,
+   "max": -5.3,
+   "latest": -6.5,
+   "spread": 1.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  }
+ },
+ "council_ytd_volatility": {
+  "1": {
+   "min": -1.4,
+   "max": 5.0,
+   "latest": 5.0,
+   "spread": 6.3,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "2": {
+   "min": -12.9,
+   "max": -5.1,
+   "latest": -10.8,
+   "spread": 7.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "3": {
+   "min": -15.1,
+   "max": -7.5,
+   "latest": -7.5,
+   "spread": 7.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "4": {
+   "min": -12.2,
+   "max": -7.4,
+   "latest": -11.0,
+   "spread": 4.8,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "5": {
+   "min": -15.3,
+   "max": -6.9,
+   "latest": -14.7,
+   "spread": 8.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "6": {
+   "min": -0.4,
+   "max": 7.5,
+   "latest": 3.8,
+   "spread": 7.8,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "7": {
+   "min": -8.2,
+   "max": 1.4,
+   "latest": -2.0,
+   "spread": 9.6,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "8": {
+   "min": -12.1,
+   "max": -7.0,
+   "latest": -11.4,
+   "spread": 5.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "9": {
+   "min": -12.9,
+   "max": -2.5,
+   "latest": -6.2,
+   "spread": 10.4,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "10": {
+   "min": -5.1,
+   "max": 3.1,
+   "latest": -2.5,
+   "spread": 8.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "11": {
+   "min": -12.6,
+   "max": -2.9,
+   "latest": -12.2,
+   "spread": 9.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "12": {
+   "min": -18.9,
+   "max": -5.8,
+   "latest": -18.4,
+   "spread": 13.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "13": {
+   "min": -18.0,
+   "max": -8.0,
+   "latest": -18.0,
+   "spread": 10.0,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "14": {
+   "min": -0.6,
+   "max": 5.7,
+   "latest": 1.2,
+   "spread": 6.3,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "15": {
+   "min": -8.9,
+   "max": -4.9,
+   "latest": -8.9,
+   "spread": 4.0,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "16": {
+   "min": -17.0,
+   "max": -8.6,
+   "latest": -10.5,
+   "spread": 8.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "17": {
+   "min": -20.9,
+   "max": -16.5,
+   "latest": -20.8,
+   "spread": 4.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "18": {
+   "min": -24.2,
+   "max": -20.3,
+   "latest": -24.2,
+   "spread": 3.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "19": {
+   "min": -12.5,
+   "max": -3.7,
+   "latest": -9.6,
+   "spread": 8.8,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "20": {
+   "min": -15.4,
+   "max": -5.9,
+   "latest": -10.1,
+   "spread": 9.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "21": {
+   "min": -17.0,
+   "max": -4.9,
+   "latest": -5.4,
+   "spread": 12.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "22": {
+   "min": -10.0,
+   "max": -2.4,
+   "latest": -7.2,
+   "spread": 7.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "23": {
+   "min": -6.9,
+   "max": -2.8,
+   "latest": -4.7,
+   "spread": 4.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "24": {
+   "min": -17.1,
+   "max": 2.8,
+   "latest": 2.7,
+   "spread": 19.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "25": {
+   "min": -15.7,
+   "max": -4.8,
+   "latest": -5.1,
+   "spread": 10.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "26": {
+   "min": 2.1,
+   "max": 12.4,
+   "latest": 3.5,
+   "spread": 10.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "27": {
+   "min": 0.0,
+   "max": 8.3,
+   "latest": 6.0,
+   "spread": 8.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "28": {
+   "min": 4.0,
+   "max": 17.9,
+   "latest": 10.2,
+   "spread": 13.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "29": {
+   "min": -4.1,
+   "max": 12.7,
+   "latest": 12.1,
+   "spread": 16.8,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "30": {
+   "min": 0.6,
+   "max": 16.9,
+   "latest": 8.5,
+   "spread": 16.3,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "31": {
+   "min": 3.4,
+   "max": 13.2,
+   "latest": 7.5,
+   "spread": 9.8,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "32": {
+   "min": 2.0,
+   "max": 9.0,
+   "latest": 4.3,
+   "spread": 7.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "33": {
+   "min": -13.2,
+   "max": -7.7,
+   "latest": -12.9,
+   "spread": 5.5,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "34": {
+   "min": 1.3,
+   "max": 16.3,
+   "latest": 1.3,
+   "spread": 15.1,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "35": {
+   "min": -13.0,
+   "max": -5.3,
+   "latest": -12.7,
+   "spread": 7.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "36": {
+   "min": -4.8,
+   "max": 8.8,
+   "latest": -4.8,
+   "spread": 13.5,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "37": {
+   "min": -0.6,
+   "max": 5.7,
+   "latest": -0.6,
+   "spread": 6.3,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "38": {
+   "min": -1.8,
+   "max": 3.9,
+   "latest": -0.9,
+   "spread": 5.7,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "39": {
+   "min": -10.5,
+   "max": -2.5,
+   "latest": -3.0,
+   "spread": 8.0,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "40": {
+   "min": -21.0,
+   "max": -14.3,
+   "latest": -16.9,
+   "spread": 6.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "41": {
+   "min": -13.0,
+   "max": 1.2,
+   "latest": -12.5,
+   "spread": 14.2,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "42": {
+   "min": -8.0,
+   "max": -3.3,
+   "latest": -7.9,
+   "spread": 4.7,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "43": {
+   "min": -2.9,
+   "max": 8.1,
+   "latest": -1.0,
+   "spread": 11.0,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "44": {
+   "min": -11.3,
+   "max": -4.7,
+   "latest": -7.9,
+   "spread": 6.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "45": {
+   "min": -20.9,
+   "max": -15.4,
+   "latest": -15.4,
+   "spread": 5.6,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "46": {
+   "min": -6.7,
+   "max": 0.7,
+   "latest": 0.7,
+   "spread": 7.4,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "47": {
+   "min": 2.8,
+   "max": 18.7,
+   "latest": 2.8,
+   "spread": 15.9,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "48": {
+   "min": -7.6,
+   "max": -4.3,
+   "latest": -6.7,
+   "spread": 3.2,
+   "crossed_zero": false,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "49": {
+   "min": -18.0,
+   "max": 2.6,
+   "latest": -2.1,
+   "spread": 20.5,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "50": {
+   "min": -11.3,
+   "max": 0.6,
+   "latest": -0.3,
+   "spread": 11.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  },
+  "51": {
+   "min": -16.0,
+   "max": 4.9,
+   "latest": 3.0,
+   "spread": 20.9,
+   "crossed_zero": true,
+   "n": 22,
+   "from": "2026-03-01"
+  }
+ },
+ "summary": {
+  "median_precinct_spread": 13.7,
+  "precincts_crossing_zero": 35,
+  "precincts_measured": 77
+ }
+}

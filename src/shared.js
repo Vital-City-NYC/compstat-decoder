@@ -128,6 +128,9 @@ export const CL = {BU:'Burglary',FA:'Fel. Assault',GA:'Grand Larceny Auto',GL:'G
 
 export const GITHUB_USER = "joshgreenman1973";
 export const REPO_NAME = "nypd-compstat-scraper";
+// This dashboard's own repo, which hosts data/context.json (revision + volatility figures
+// regenerated weekly by scripts/build_context.py) and data/weekly_series/master.json.
+export const REPO_SELF = "compstat-decoder";
 export const CITYWIDE_POPULATION = 8804190; // 2020 Census
 export const VOLATILITY_THRESHOLD = 30;
 
@@ -356,12 +359,20 @@ export const toOrdinalPrecinct = (n) => {
 /* See John Hall, "The Real Crime Numbers," Vital City.                */
 /* ------------------------------------------------------------------ */
 export const REVISION_URL = 'https://www.vitalcitynyc.org/real-crime-numbers-nyc-nypd/';
-export const REVISION_TOOLTIP =
-  "The NYPD classifies a complaint when it is reported, then revises it as evidence arrives — a hospital exam upgrades a misdemeanor assault to a felony, a medical examiner rules a death a homicide. Across 22 weekly snapshots of this feed, current-year counts grew 3.7% beyond the new weeks being added; the prior-year figures moved 0.04%.";
 
-export const ProvisionalNote = ({ year, className = '' }) => (
+// Every quantity here comes from contextData (data/context.json), rebuilt weekly. The
+// generic sentence is the fallback when that fetch fails — it makes no numeric claim,
+// so a stale or missing file can never leave a wrong figure on the page.
+export const revisionTooltip = (contextData) => {
+  const base = "The NYPD classifies a complaint when it is reported, then revises it as evidence arrives — a hospital exam upgrades a misdemeanor assault to a felony, a medical examiner rules a death a homicide.";
+  const r = contextData?.revisions;
+  if (!r || r.citywide_pct == null || r.prior_year_pct == null) return base;
+  return `${base} Across ${contextData.n_snapshots} weekly snapshots of this feed (${contextData.window_start} to ${contextData.window_end}), current-year counts grew ${r.citywide_pct}% beyond the new weeks being added; the prior-year figures moved ${r.prior_year_pct}%.`;
+};
+
+export const ProvisionalNote = ({ year, contextData, className = '' }) => (
   <span className={`text-gray-400 ${className}`}>
-    <span title={REVISION_TOOLTIP} className="cursor-help decoration-dotted decoration-gray-300 underline underline-offset-[3px]">
+    <span title={revisionTooltip(contextData)} className="cursor-help decoration-dotted decoration-gray-300 underline underline-offset-[3px]">
       {year} counts are preliminary
     </span>
     {' and typically revise '}
@@ -369,6 +380,29 @@ export const ProvisionalNote = ({ year, className = '' }) => (
     {`; ${year - 1} has settled.`}
   </span>
 );
+
+/* ------------------------------------------------------------------ */
+/* YEAR-TO-DATE VOLATILITY                                            */
+/* Year-to-date is a window whose LENGTH changes — a few weeks in      */
+/* January, a full year in December — so the percentage moves on its   */
+/* own as the year fills in, with no revision involved. This reports   */
+/* the range a given geography's figure has actually occupied.         */
+/* ------------------------------------------------------------------ */
+export const ytdVolatility = (contextData, key, kind = 'geo') => {
+  const src = kind === 'council' ? contextData?.council_ytd_volatility : contextData?.ytd_volatility;
+  const v = src?.[key];
+  // Below ~3 points the range is narrower than the rounding readers see; saying so would
+  // manufacture doubt rather than describe it.
+  if (!v || v.spread < 3) return null;
+  return v;
+};
+
+// Signed form ("−18.5%") rather than the site's usual "Down 18.5%", which reads badly
+// inside a range.
+const signedPct = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1).replace(/\.0$/, '')}%`;
+
+export const volatilitySentence = (v, noun = 'precinct') =>
+  `Early in the year, "year-to-date" covers only a few weeks, so a handful of incidents swings the percentage hard. As the year fills in, it steadies. This ${noun}'s year-to-date change has ranged from ${signedPct(v.min)} to ${signedPct(v.max)} since ${formatPeriodDate(v.from) || v.from}.`;
 
 export const renderMarkdown = (node) => {
   if (typeof node === 'string') {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  FALLBACK_DATA, GITHUB_USER, REPO_NAME, CITYWIDE_POPULATION, VOLATILITY_THRESHOLD,
+  FALLBACK_DATA, GITHUB_USER, REPO_NAME, REPO_SELF, CITYWIDE_POPULATION, VOLATILITY_THRESHOLD,
   GEO_POPULATIONS, PRECINCT_NEIGHBORHOODS, TOURIST_PRECINCTS, VIOLENT_CRIMES, PROPERTY_CRIMES,
   safeNum, calcPct, formatGeoName, toOrdinalPrecinct, precinctPatrolBorough, PATROL_BOROUGH_NAMES,
   SearchIcon, Navigation, RefreshCw, Activity,
@@ -53,6 +53,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [fetchError, setFetchError] = useState(false);
   const [rtciData, setRtciData] = useState(null);
+  const [contextData, setContextData] = useState(null);
   const [isLocating, setIsLocating] = useState(false);
 
   // Map state ('volume' was retired as a map mode; normalize legacy links to 'rate')
@@ -127,6 +128,16 @@ export default function App() {
         RTCI_FALLBACK.forEach(c => { fallbackMap[c.city] = c; });
         setRtciData({ cities: fallbackMap, period: RTCI_FALLBACK_PERIOD, updated: RTCI_FALLBACK_UPDATED });
       });
+  }, []);
+
+  // Revision magnitudes and year-to-date volatility ranges, regenerated weekly by
+  // scripts/build_context.py from the snapshot archive. Fetched live rather than bundled
+  // so the figures the site quotes about its own reliability can't go stale between builds.
+  useEffect(() => {
+    fetch(`https://raw.githubusercontent.com/tedalcorn/${REPO_SELF}/main/data/context.json?t=${Date.now()}`)
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('no context')))
+      .then(setContextData)
+      .catch(() => setContextData(null));
   }, []);
 
   // Selecting a geography routes to a tab that can actually show it.
@@ -474,6 +485,7 @@ export default function App() {
             isTouristPrecinct={isTouristPrecinct}
             activePop={activePop}
             rtciData={rtciData}
+            contextData={contextData}
             downloadCSV={downloadCSV}
             onSelectGeo={goToGeoHeadlines}
           />
@@ -484,6 +496,7 @@ export default function App() {
             activeTab={activeTab}
             activeGeo={activeGeo}
             isTouristPrecinct={isTouristPrecinct}
+            contextData={contextData}
             downloadCSV={downloadCSV}
           />
         )}
@@ -508,12 +521,13 @@ export default function App() {
             activeTab={activeTab}
             districtNum={districtNum}
             setDistrictNum={setDistrictNum}
+            contextData={contextData}
             onSelectPrecinct={selectPrecinctForNumbers}
             downloadCSV={downloadCSV}
           />
         )}
         {mainTab === 'about' && (
-          <About parsedData={parsedData} fetchError={fetchError} />
+          <About contextData={contextData} parsedData={parsedData} fetchError={fetchError} />
         )}
       </div>
     </div>

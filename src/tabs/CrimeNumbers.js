@@ -17,7 +17,7 @@ const TREND_TOOLTIP = "Trend column shows the offense's annual citywide count ba
 const UCR_RAPE_NOTE = "Rape counted under the FBI's broader Uniform Crime Reporting definition — wider than New York's penal-law \"Rape\" line, so the count runs higher.";
 const displayName = (name) => name === 'UCR Rape*' ? 'Rape (UCR)' : expandCrimeTitle(name);
 
-export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouristPrecinct, downloadCSV }) {
+export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouristPrecinct, contextData, downloadCSV }) {
   const [sortBy, setSortBy] = useState('current');
   const [sortDir, setSortDir] = useState('desc');
   const [classFilter, setClassFilter] = useState('all'); // all | Person | Property
@@ -144,7 +144,7 @@ export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouri
       <div className="mt-5 text-[11px] font-serif italic text-gray-500 border-t border-gray-100 pt-3">
         * Base sample under 30 (statistically volatile).
         <span className="mx-1.5 not-italic text-gray-300" aria-hidden>·</span>
-        <ProvisionalNote year={currentYear} className="not-italic" />
+        <ProvisionalNote year={currentYear} contextData={contextData} className="not-italic" />
       </div>
     </div>
   );

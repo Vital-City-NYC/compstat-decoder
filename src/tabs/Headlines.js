@@ -6,7 +6,7 @@ import {
   CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatGeoName, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
-  calcPct, dirPct, ProvisionalNote,
+  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
   Download,
 } from '../shared';
@@ -303,7 +303,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
 /* ------------------------------------------------------------------ */
 /* HEADLINES TAB                                                       */
 /* ------------------------------------------------------------------ */
-export default function Headlines({ parsedData, hotspots, rawData, activeTab, activeGeo, isTouristPrecinct, activePop, rtciData, downloadCSV, onSelectGeo }) {
+export default function Headlines({ parsedData, hotspots, rawData, activeTab, activeGeo, isTouristPrecinct, activePop, rtciData, contextData, downloadCSV, onSelectGeo }) {
   const { totals, felonies, period } = parsedData;
 
   // Violent / property subsets of the 7-felony major index.
@@ -326,6 +326,12 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
   ];
 
   const bullets = buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isTouristPrecinct });
+
+  // Year-to-date volatility applies only to the year-to-date view; the weekly toggle shows a
+  // fixed-length window, which doesn't have this problem.
+  const volatilityKey = activeGeo === 'citywide' ? 'citywide' : activeGeo;
+  const volatility = activeTab === 'ytd' ? ytdVolatility(contextData, volatilityKey) : null;
+  const volatilityNoun = activeGeo === 'citywide' ? 'city' : PATROL_BOROUGH_NAMES.includes(activeGeo) ? 'borough' : 'precinct';
 
   return (
     <div>
@@ -379,7 +385,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
             <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}` : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
             <span className="text-gray-300" aria-hidden>·</span>
-            <ProvisionalNote year={endYear} />
+            <ProvisionalNote year={endYear} contextData={contextData} />
           </div>
         </div>
         <LocatorMap activeGeo={activeGeo} onSelectGeo={onSelectGeo} />
@@ -389,7 +395,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         <div className="lg:col-span-2 p-6 bg-white rounded-sm border border-gray-200">
           <h2 className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400 mb-4">Patterns and outliers</h2>
-          {bullets.length === 0 ? (
+          {bullets.length === 0 && !volatility ? (
             <p className="font-serif text-[15px] text-gray-500 italic">Nothing unusual stands out in this period's data.</p>
           ) : (
             <ul className="space-y-3.5">
@@ -399,6 +405,17 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
                   <span>{renderBullet(b, onSelectGeo || (() => {}))}</span>
                 </li>
               ))}
+              {/* How much the figure above has already moved this year. Set off in amber so it
+                  reads as a caveat about the measure rather than another finding about crime. */}
+              {volatility && (
+                <li className="flex gap-3 font-serif text-[15px] leading-relaxed pt-1">
+                  <span className="flex-shrink-0 mt-[1px]" style={{ color: '#b45309' }}>▪</span>
+                  <span style={{ color: '#92400e' }}>
+                    <strong className="font-black">Why this number moves:</strong>{' '}
+                    {volatilitySentence(volatility, volatilityNoun)}
+                  </span>
+                </li>
+              )}
             </ul>
           )}
         </div>

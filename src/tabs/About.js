@@ -1,4 +1,5 @@
 import React from 'react';
+import { expandCrime, expandCrimeTitle } from '../shared';
 
 /* ------------------------------------------------------------------ */
 /* ABOUT TAB                                                           */
@@ -17,7 +18,12 @@ const A = ({ href, children }) => (
 );
 const Code = ({ children }) => <code className="text-[12px]">{children}</code>;
 
-export default function About({ parsedData, fetchError }) {
+export default function About({ contextData, parsedData, fetchError }) {
+  const ctx = contextData;
+  const rev = ctx?.revisions;
+  const expand = (n) => (expandCrime(n) || String(n || '').toLowerCase());
+  const expandTitle = (n) => expandCrimeTitle(n);
+
   return (
     <div className="max-w-3xl">
       <h2 className="text-2xl font-black font-serif mb-6">About this project</h2>
@@ -57,14 +63,45 @@ export default function About({ parsedData, fetchError }) {
         Numbers</A>, finding that every one of 95 monthly totals he examined was later revised upward.
       </P>
       <P>
-        We measured the effect on this dashboard&rsquo;s own feed. An archive of 22 weekly snapshots
-        (March 1 through July 26, 2026) lets each week&rsquo;s year-to-date total be compared against what it
-        should have been given only the week just added; anything left over is backfill into weeks already
-        published. Citywide, current-year counts ran <strong>3.7 percent above</strong> the sum of the weeks
-        reported, concentrated in murder (roughly a quarter of the year&rsquo;s additions arrived late),
-        burglary and felony assault. Grand larceny auto was the only category to revise downward.
-        Over the same span the 2025 comparison figures moved <strong>0.04 percent</strong>.
+        We measure the effect on this dashboard&rsquo;s own feed, and recompute it every week so the
+        figures below never go stale. An archive of weekly snapshots lets each week&rsquo;s year-to-date
+        total be compared against what it should have been given only the week just added; anything left
+        over is backfill into weeks already published.{rev ? (
+          <>
+            {' '}Across {ctx.n_snapshots} snapshots ({ctx.window_start} to {ctx.window_end}), citywide
+            current-year counts ran <strong>{rev.citywide_pct} percent above</strong> the sum of the weeks
+            reported, concentrated in {expand(rev.largest_upward)} and felony assault. Over the same span
+            the prior-year comparison figures moved <strong>{rev.prior_year_pct} percent</strong>.
+            {rev.only_downward?.length === 1 && <> {expandTitle(rev.only_downward[0])} was the only category to revise downward.</>}
+          </>
+        ) : ' Those figures load with the site; if the panel below is empty the measurement file could not be reached.'}
       </P>
+      {rev && (
+        <div className="overflow-x-auto mb-4">
+          <table className="text-[13px] font-serif text-gray-700 w-full max-w-lg">
+            <thead>
+              <tr className="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-200">
+                <th className="text-left py-1.5">Offense</th>
+                <th className="text-right py-1.5">Added</th>
+                <th className="text-right py-1.5">Backfill</th>
+                <th className="text-right py-1.5">Revised</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(rev.by_offense)
+                .sort((a, b) => (b[1].pct ?? 0) - (a[1].pct ?? 0))
+                .map(([name, v]) => (
+                  <tr key={name} className="border-b border-gray-100">
+                    <td className="py-1">{expandTitle(name)}</td>
+                    <td className="py-1 text-right tabular-nums">{v.added.toLocaleString()}</td>
+                    <td className="py-1 text-right tabular-nums">{v.backfill.toLocaleString()}</td>
+                    <td className="py-1 text-right tabular-nums font-bold">{v.pct > 0 ? '+' : ''}{v.pct}%</td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       <P>
         So: treat the current year as provisional and the prior-year comparison as settled. Small declines
         early in the year are the least reliable numbers on this site, and a change of a few percent may not

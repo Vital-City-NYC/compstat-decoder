@@ -8,6 +8,7 @@ import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
   safeNum, pctColor, dirPct, signedCount, expandCrime,
   toOrdinalPrecinct, SearchIcon, ChevronDown, Download,
+  ytdVolatility, volatilitySentence,
 } from '../shared';
 
 const MAJORS = ['Murder', 'Rape', 'Robbery', 'Fel. Assault', 'Burglary', 'Gr. Larceny', 'G.L.A.'];
@@ -378,7 +379,7 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
   );
 };
 
-export default function CouncilDistricts({ rawData, activeTab, districtNum, setDistrictNum, onSelectPrecinct, downloadCSV }) {
+export default function CouncilDistricts({ rawData, activeTab, districtNum, setDistrictNum, contextData, onSelectPrecinct, downloadCSV }) {
   const districts = councilData.districts;
   const district = districts.find(d => d.district === districtNum) || districts[0];
 
@@ -442,6 +443,11 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
 
   // The share-weighted precinct average — a crude estimate of the district as a whole.
   const precinctAvg = { all: f.districtAll, violent: f.districtVio, property: f.districtProp };
+
+  // How much this district's weighted year-to-date figure has itself moved across the
+  // snapshot archive. Districts run steadier than their precincts — pooling several
+  // precincts enlarges the sample — but the range is still worth stating.
+  const districtVolatility = ytdVolatility(contextData, String(districtNum), 'council');
 
   // Build the auto-generated top-line findings as bolded prose bullets.
   const findings = useMemo(() => {
@@ -517,6 +523,18 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                 <span>{renderFinding(b)}</span>
               </li>
             ))}
+            {/* Same caveat the Headlines page carries, computed on the district's own weighted
+                figure rather than any single precinct's. Set off in amber so it reads as a note
+                about the measure, not another finding. */}
+            {districtVolatility && (
+              <li className="flex gap-2.5 font-serif text-[14px] leading-relaxed pt-1">
+                <span className="flex-shrink-0 mt-[1px]" style={{ color: '#b45309' }}>▪</span>
+                <span style={{ color: '#92400e' }}>
+                  <strong className="font-black">Why this number moves:</strong>{' '}
+                  {volatilitySentence(districtVolatility, 'district')}
+                </span>
+              </li>
+            )}
           </ul>
           <p className="text-[10px] text-gray-400 italic mt-3">Estimated from each precinct's citywide CompStat totals, weighted by its share of the district's area — a crude approximation, since precincts extend beyond district lines.</p>
         </div>
