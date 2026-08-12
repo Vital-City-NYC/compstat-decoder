@@ -59,7 +59,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
 
   return (
     <div className="relative">
-      <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" onMouseMove={handleMouse}>
+      <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: 'max(420px, calc(100vh - 340px))' }} onMouseMove={handleMouse}>
         <defs>
           <pattern id="tourist-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2="6" stroke="#1f2937" strokeOpacity="0.5" strokeWidth="1" />
@@ -223,7 +223,7 @@ const PrecinctRankingBars = ({ precinctRates, onSelect, mapMode = 'rate', hovere
   const botMax = mapMode === 'change' ? Math.abs(bottom5[0]?.pctChange || 1) : (top5[0]?.rate || 1);
 
   return (
-    <div className="flex flex-col justify-between h-full gap-6 py-8">
+    <div className="flex flex-col justify-between h-full gap-6 py-2">
       <div>
         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1" style={{ color: VC.magenta }}>
           <TrendingUp size={12} /> {mapMode === 'change' ? 'Biggest % increases' : 'Highest rate (per 100k)'}
@@ -283,7 +283,7 @@ export default function ByPrecinct({ precinctRates, mapMode, setMapMode, mapCrim
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[2.3fr_1fr] gap-8 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-[2.2fr_1fr] gap-6 items-stretch">
         <PrecinctMap precinctRates={precinctRates} onSelect={onSelectPrecinct} mapMode={mapMode} externalHovered={hoveredPrecinctNum} onHover={setHoveredPrecinctNum} />
         <PrecinctRankingBars precinctRates={precinctRates} onSelect={onSelectPrecinct} mapMode={mapMode} hoveredPrecinctNum={hoveredPrecinctNum} onHover={setHoveredPrecinctNum} />
       </div>
