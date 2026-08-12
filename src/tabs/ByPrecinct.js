@@ -128,7 +128,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
               </div>
             )}
             {hoveredData.countDelta != null && (
-              <div className="font-medium mt-1" style={{ color: hoveredData.countDelta > 0 ? '#c0392b' : hoveredData.countDelta < 0 ? '#27ae60' : '#333' }}>
+              <div className="font-medium mt-1" style={{ color: hoveredData.countDelta > 0 ? '#d2232a' : hoveredData.countDelta < 0 ? '#57aa4a' : '#333' }}>
                 {hoveredData.countDelta > 0 ? '+' : ''}{hoveredData.countDelta.toLocaleString()} incidents vs last year
                 {hoveredData.pctChange != null && <span className="text-gray-500 font-normal"> ({hoveredData.pctChange > 0 ? '+' : ''}{hoveredData.pctChange.toFixed(1)}%)</span>}
               </div>

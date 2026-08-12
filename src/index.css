@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---- Vital City reskin (branch vc-reskin) ------------------------------
+   Hairlines, hard corners, no shadows; Safety Orange focus rings.
+   Circles (.rounded-full) are kept — map dots and their legend swatches match. */
+.rounded, .rounded-sm, .rounded-lg, .rounded-t-sm { border-radius: 0 !important; }
+.shadow-sm { box-shadow: none !important; }
+:focus-visible { outline: 2px solid #ff7c53 !important; outline-offset: 1px; }
+/* Gascogne ships in Light only; let display headings use it at its true weight
+   instead of a synthesized faux-bold. Bold spans inside serif body text still embolden. */
+h1.font-serif, h2.font-serif, h3.font-serif { font-weight: 300; }
+
 /* Print: a single letter-size one-pager for the current council district.
    Everything on screen is marked print:hidden; the one-pager is hidden:print:block. */
 @media print {

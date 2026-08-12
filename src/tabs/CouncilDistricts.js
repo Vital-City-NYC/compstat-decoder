@@ -347,7 +347,7 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
           value={query}
           onChange={e => setQuery(e.target.value)}
           onBlur={() => setTimeout(() => { setOpen(false); setQuery(''); }, 200)}
-          className="w-full text-[14px] font-bold py-2 pl-8 pr-2 rounded border bg-white focus:outline-none border-indigo-400"
+          className="w-full text-[14px] font-bold py-2 pl-8 pr-2 rounded border bg-white focus:outline-none border-[#ff7c53]"
         />
         <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded z-50 max-h-80 overflow-y-auto">
           {results.length === 0 && <div className="px-3 py-3 text-sm text-gray-500">No matches.</div>}
@@ -369,8 +369,8 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
   return (
     <button onClick={() => { setOpen(true); setQuery(''); }} title="Change district" className="text-left group min-w-0">
       <div className="flex items-center gap-2">
-        <h2 className="text-xl sm:text-2xl font-black font-serif group-hover:text-indigo-700 transition-colors whitespace-nowrap">Council District {district.district}</h2>
-        <ChevronDown size={18} className="text-gray-400 group-hover:text-indigo-600 flex-shrink-0" />
+        <h2 className="text-xl sm:text-2xl font-black font-serif group-hover:text-[#ff7c53] transition-colors whitespace-nowrap">Council District {district.district}</h2>
+        <ChevronDown size={18} className="text-gray-400 group-hover:text-[#ff7c53] flex-shrink-0" />
       </div>
       <div className="flex items-baseline flex-wrap gap-x-2 mt-0.5">
         {district.member && <span className="text-[13px] sm:text-[14px] font-serif text-gray-600">Council Member {district.member}</span>}
@@ -531,7 +531,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                 about the measure, not another finding. */}
             {districtVolatility && (
               <li className="font-serif text-[14px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
-                  style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)' }}>
+                  style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)' }}>
                 <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
                 {volatilitySentence(districtVolatility, 'district')}
               </li>

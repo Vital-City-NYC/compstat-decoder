@@ -74,7 +74,7 @@ const renderBullet = (text, onPrecinct) => {
         const name = seg.slice(2, -2);
         return (
           <button key={j} type="button" onClick={() => onPrecinct(name)}
-            className="inline text-left underline decoration-dotted decoration-gray-400 underline-offset-2 hover:text-indigo-600 hover:decoration-indigo-500 transition-colors">
+            className="inline text-left underline decoration-dotted decoration-gray-400 underline-offset-2 hover:text-[#ff7c53] hover:decoration-[#ff7c53] transition-colors">
             {name}
           </button>
         );
@@ -148,7 +148,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
       <div className="flex flex-wrap gap-1.5 mb-4">
         {RTCI_GROUPS.map(g => (
           <button key={g.key} onClick={() => setActiveGroup(g.key)}
-            className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-sm ${activeGroup === g.key ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600'}`}>
+            className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-sm ${activeGroup === g.key ? 'bg-black text-white' : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600'}`}>
             {g.label}
           </button>
         ))}
@@ -163,7 +163,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
                 {c.city === 'New York City' ? 'New York' : c.city}
               </span>
               <div className="flex-1 h-3.5 bg-gray-200 rounded-sm overflow-hidden">
-                <div className={`h-full rounded-sm ${isNYC ? 'bg-gray-900' : 'bg-gray-400'}`} style={{ width: `${barW}%` }} />
+                <div className={`h-full rounded-sm ${isNYC ? 'bg-[#e7466d]' : 'bg-[#217ebe]'}`} style={{ width: `${barW}%` }} />
               </div>
               <span className={`w-12 text-[11px] tabular-nums ${isNYC ? 'font-black text-gray-900' : 'font-medium text-gray-500'}`}>
                 {formatRate(c.rate)}
@@ -182,7 +182,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
         <p className="text-[9px] text-gray-400 leading-snug">Data through {period} · Updated {updated} · UCR Part I offenses</p>
         <div className="flex items-center gap-2.5">
           <a href="https://realtimecrimeindex.com/" target="_blank" rel="noopener noreferrer"
-            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
+            className="text-[10px] font-bold text-[#ff7c53] hover:text-black hover:underline">
             Real-Time Crime Index ↗
           </a>
           {downloadCSV && (
@@ -344,7 +344,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
       {isTouristPrecinct && <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm font-serif italic text-gray-700"><strong>Context Note:</strong> {formatGeoName(activeGeo)} is a high-traffic hub with few residents; crime rates primarily reflect commercial/visitor density.</div>}
 
       {stale && (
-        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)', borderColor: '#b45309' }}>
+        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)', borderColor: '#dde44c' }}>
           <strong className="font-black">These figures are out of date.</strong> The NYPD publishes a separate
           weekly file for each geography, and the one for {formatGeoName(activeGeo)} was last updated for the week
           ending {stale.asOf} — {stale.weeksBehind} {stale.weeksBehind === 1 ? 'week' : 'weeks'} behind the rest of
@@ -352,7 +352,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </div>
       )}
       {['Bronx North', 'Bronx South'].includes(activeGeo) && (
-        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)', borderColor: '#b45309' }}>
+        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)', borderColor: '#dde44c' }}>
           <strong className="font-black">A new command.</strong> The NYPD divided Patrol Borough Bronx into
           Bronx North and Bronx South on May 20, 2026. Precinct boundaries did not change, so the department
           restated both commands across the whole period rather than starting them in May: the figures here cover
@@ -435,7 +435,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
                   reads as a caveat about the measure rather than another finding about crime. */}
               {volatility && (
                 <li className="font-serif text-[15px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
-                    style={{ backgroundColor: 'rgba(250, 204, 21, 0.16)' }}>
+                    style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)' }}>
                   <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
                   {volatilitySentence(volatility, volatilityNoun)}
                 </li>

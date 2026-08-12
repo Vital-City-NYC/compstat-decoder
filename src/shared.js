@@ -230,7 +230,7 @@ export const calcPct = (current, prior) => {
   return ((c - p) / p) * 100;
 };
 export const formatPct = (v) => (typeof v !== 'number' || Number.isNaN(v)) ? "—" : `${v > 0 ? "+" : ""}${v.toFixed(1)}%`;
-export const pctColor = (v) => v == null ? '#6b7280' : v > 0 ? '#c0392b' : v < 0 ? '#1f7a3a' : '#6b7280';
+export const pctColor = (v) => v == null ? '#6b7280' : v > 0 ? '#d2232a' : v < 0 ? '#57aa4a' : '#6b7280';
 // "Down 6.3%" / "Up 1.6%" / "No change" — how people actually talk about crime trends.
 // Whole numbers drop the trailing ".0" (e.g. "Up 100%", not "Up 100.0%").
 export const dirPct = (v, digits = 1) => {

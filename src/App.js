@@ -421,7 +421,7 @@ export default function App() {
               onClick={() => { setActiveGeo('citywide'); setMainTab('headlines'); }}
               aria-pressed={mainTab === 'headlines'}
               title="Home — citywide headlines"
-              className={`text-[10px] font-black uppercase tracking-wider flex-shrink-0 py-1.5 border-b-2 transition-colors ${mainTab === 'headlines' ? 'border-black text-black' : 'border-transparent text-black hover:text-indigo-600'}`}>
+              className={`text-[10px] font-black uppercase tracking-wider flex-shrink-0 py-1.5 border-b-2 transition-colors ${mainTab === 'headlines' ? 'border-black text-black' : 'border-transparent text-black hover:text-[#ff7c53]'}`}>
               NYC CompStat Decoder
             </button>
           </div>
@@ -459,7 +459,7 @@ export default function App() {
                 onChange={e => setSearchQuery(e.target.value)}
                 onFocus={e => { if (geoInert) return; setGeoFocused(true); setSearchQuery(''); e.target.value = ''; }}
                 onBlur={() => setTimeout(() => { setGeoFocused(false); setSearchQuery(''); }, 200)}
-                className={`w-full text-[11px] font-bold py-1.5 pl-8 pr-2 rounded border focus:outline-none truncate ${geoInert ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' : geoFocused ? 'bg-white border-indigo-400' : 'bg-white border-gray-300'}`}
+                className={`w-full text-[11px] font-bold py-1.5 pl-8 pr-2 rounded border focus:outline-none truncate ${geoInert ? 'bg-gray-50 border-gray-200 text-gray-400 cursor-not-allowed' : geoFocused ? 'bg-white border-[#ff7c53]' : 'bg-white border-gray-300'}`}
               />
               {geoFocused && !geoInert && (
                 <div className="absolute top-full left-0 sm:left-auto sm:right-0 w-64 sm:w-72 mt-1 bg-white border border-gray-200 shadow-xl rounded z-50 max-h-72 overflow-y-auto">
