@@ -327,9 +327,11 @@ export default function App() {
         catch { return s; }
       };
       const end = fmt(parsedData.period.week_end);
-      document.title = `NYC CompStat Decoder · Updated ${end}`;
+      // The embedded fallback snapshot can be months old; claiming "Updated <date>" from
+      // it presents stale data as current (a crawler with fetch blocked sees exactly that).
+      document.title = rawData === FALLBACK_DATA ? 'NYC CompStat Decoder' : `NYC CompStat Decoder · Updated ${end}`;
     }
-  }, [parsedData.period?.week_end, parsedData.period?.week_start]);
+  }, [parsedData.period?.week_end, parsedData.period?.week_start, rawData]);
 
   const hotspots = useMemo(() => {
     // Scope the pattern-detection pool: citywide looks across all precincts; a borough

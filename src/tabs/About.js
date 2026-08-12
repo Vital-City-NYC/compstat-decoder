@@ -202,7 +202,9 @@ export default function About({ contextData, parsedData, fetchError }) {
 
       <div className="mt-10 pt-6 border-t border-gray-200 text-[13px] text-gray-500 leading-snug">
         <p className="mb-2">
-          Updated {(parsedData.period?.week_end || '—').replace(/\/20(\d\d)$/, '/$1')} (CompStat week ending). Page rendered {new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}.{fetchError && ' Live fetch unavailable — showing embedded data.'}
+          {parsedData.period?.week_end
+            ? `Data through the CompStat week ending ${parsedData.period.week_end.replace(/\/20(\d\d)$/, '/$1')}.`
+            : 'Data date unavailable.'} Page rendered {new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}.{fetchError && ' The live feed could not be reached — figures shown are an embedded snapshot from that older week.'}
         </p>
         <p><a href="https://github.com/tedalcorn/compstat-decoder" className="underline hover:text-black" target="_blank" rel="noopener noreferrer">View source on GitHub →</a></p>
       </div>

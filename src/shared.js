@@ -236,6 +236,7 @@ export const pctColor = (v) => v == null ? '#6b7280' : v > 0 ? '#d2232a' : v < 0
 export const dirPct = (v, digits = 1) => {
   if (typeof v !== 'number' || Number.isNaN(v)) return '—';
   if (v === 0) return 'No change';
+  if (v < -100) v = -100; // a count cannot fall more than 100%; clamp so an upstream bug can never print an impossible decline
   const n = Math.abs(v).toFixed(digits).replace(/\.0$/, '');
   return `${v > 0 ? 'Up' : 'Down'} ${n}%`;
 };
