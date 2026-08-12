@@ -140,7 +140,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
       <div className="flex flex-wrap gap-1.5 mb-2">
         {metrics.map(m => (
           <button key={m.key} onClick={() => setActiveMetric(m.key)}
-            className={`px-2.5 py-1 text-[9px] font-black uppercase tracking-wide rounded-sm border ${activeMetric === m.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-800'}`}>
+            className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-wide rounded-sm border ${activeMetric === m.key ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-500 border-gray-200 hover:text-gray-800'}`}>
             {m.label}
           </button>
         ))}
@@ -148,7 +148,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
       <div className="flex flex-wrap gap-1.5 mb-4">
         {RTCI_GROUPS.map(g => (
           <button key={g.key} onClick={() => setActiveGroup(g.key)}
-            className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide rounded-sm ${activeGroup === g.key ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600'}`}>
+            className={`px-2 py-1 text-[11px] font-bold uppercase tracking-wide rounded-sm ${activeGroup === g.key ? 'bg-indigo-600 text-white' : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600'}`}>
             {g.label}
           </button>
         ))}
@@ -179,7 +179,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
         ))}
       </div>
       <div className="mt-3 pt-2.5 border-t border-gray-200 flex flex-col gap-1.5">
-        <p className="text-[9px] text-gray-400 leading-snug">Data through {period} · Updated {updated} · UCR Part I offenses</p>
+        <p className="text-[10px] text-gray-400 leading-snug">Data through {period} · Updated {updated} · UCR Part I offenses</p>
         <div className="flex items-center gap-2.5">
           <a href="https://realtimecrimeindex.com/" target="_blank" rel="noopener noreferrer"
             className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline">
@@ -193,7 +193,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
                 downloadCSV(`city_comparison_${activeMetric}_${activeGroup}.csv`, [header, ...data]);
               }}
               title="Download city comparison as CSV"
-              className="text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-black border border-gray-300 rounded px-1.5 py-0.5 hover:bg-white transition-colors flex items-center gap-1">
+              className="text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-black border border-gray-300 rounded px-1.5 py-0.5 hover:bg-white transition-colors flex items-center gap-1">
               <Download size={9} /> CSV
             </button>
           )}
@@ -401,8 +401,9 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
       {/* Precinct rate vs citywide — the one comparison a resident can't compute from
           counts alone. Same window on both sides; hidden on the weekly view (per-100k
           on one week is noise) and for tourist hubs / precincts with no population. */}
-      <h1 className="text-[22px] sm:text-[26px] lg:text-[29px] font-black leading-[1.15] tracking-tight mb-5 text-black">
+      <h1 className="text-[25px] sm:text-[30px] lg:text-[35px] font-black leading-[1.15] tracking-tight mb-5 text-black">
         <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
+
       </h1>
       {activeGeo.includes('Precinct') && !isTouristPrecinct && activePop && activeTab !== 'wtd' && totals.citywideRate > 0 && (() => {
         const localRate = (totals.mCur / activePop) * 100000;
