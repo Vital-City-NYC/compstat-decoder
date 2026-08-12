@@ -62,8 +62,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
     <div className="mt-4 border border-gray-300 rounded-sm shadow-sm overflow-hidden max-w-xl bg-white">
       {/* Email-client chrome */}
       <div className="bg-gray-100 border-b border-gray-300 px-4 py-2.5 text-[11px] text-gray-600 space-y-0.5">
-        {/* VC mention hidden pre-publication — restore: <div><span className="font-bold text-gray-500">From:</span> Vital City &lt;hello@vitalcitynyc.org&gt;</div> */}
-        <div><span className="font-bold text-gray-500">From:</span> NYC CompStat Decoder</div>
+        <div><span className="font-bold text-gray-500">From:</span> Vital City &lt;hello@vitalcitynyc.org&gt;</div>
         <div><span className="font-bold text-gray-500">To:</span> {email}</div>
         <div className="text-[12px] text-black font-bold">{subject}</div>
       </div>
@@ -138,8 +137,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
         <div className="border-t border-gray-200 mt-6 pt-3 text-[10px] text-gray-400 leading-relaxed">
           You're receiving this because you signed up for {cadence.toLowerCase()} updates on Council District {n} at
           the NYC CompStat Decoder. <span className="underline">Unsubscribe</span> · <span className="underline">Manage preferences</span>
-          {/* VC mention hidden pre-publication — restore: <br />Vital City · vitalcitynyc.org */}
-          <br />NYC CompStat Decoder
+          <br />Vital City · vitalcitynyc.org
         </div>
       </div>
     </div>

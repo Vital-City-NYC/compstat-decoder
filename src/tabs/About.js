@@ -29,9 +29,8 @@ export default function About({ contextData, parsedData, fetchError }) {
       <h2 className="text-2xl font-black font-serif mb-6">About this project</h2>
 
       <P>
-        {/* VC mention hidden pre-publication — to restore, put this sentence back at the start of the paragraph:
-            Published by <A href="https://vitalcitynyc.org/">Vital City</A>, an independent New York policy journal. */}
-        NYC CompStat Decoder reads the NYPD&rsquo;s weekly CompStat report and puts the week&rsquo;s numbers in
+        Published by <A href="https://vitalcitynyc.org/">Vital City</A>, an independent New York policy
+        journal. NYC CompStat Decoder reads the NYPD&rsquo;s weekly CompStat report and puts the week&rsquo;s numbers in
         longer-run and geographic context. The project is open source. Everything on this site traces to one of
         the sources described below; each note says what the data covers, where it comes from, and what was done to it.
       </P>
@@ -188,10 +187,8 @@ export default function About({ contextData, parsedData, fetchError }) {
       <P>
         The &ldquo;30-Year Transformation&rdquo; page draws on the same historical series, plus citywide
         misdemeanor assault counts for 2000&ndash;2024 from the NYPD&rsquo;s historical misdemeanor tables.
-        {/* VC mention hidden pre-publication — to restore, revert to original wording:
-            "...per-100,000 offense rates; Vital City has not independently verified those underlying figures, and they should be read as illustrative." */}
-        Its precinct scatterplot pairs precinct poverty rates against per-100,000 offense rates; those underlying
-        figures have not been independently verified, and should be read as illustrative.
+        Its precinct scatterplot pairs precinct poverty rates against per-100,000 offense rates; Vital City
+        has not independently verified those underlying figures, and they should be read as illustrative.
       </P>
 
       <H>Methodology notes</H>

@@ -745,8 +745,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
         </div>
         <div className="mt-3 pt-2 border-t border-gray-300 flex justify-between gap-4 text-[8px] text-gray-400 flex-shrink-0" style={{ fontFamily: 'system-ui, sans-serif' }}>
           <span>Sources: NYPD CompStat weekly report; NYC Open Data (complaint &amp; shooting data). Precinct figures are weighted by each precinct's share of the district — a crude approximation, since precincts extend beyond district lines.</span>
-          {/* VC mention hidden pre-publication — restore: <span className="whitespace-nowrap">Published by Vital City · vitalcitynyc.org</span> */}
-          <span className="whitespace-nowrap">NYC CompStat Decoder</span>
+          <span className="whitespace-nowrap">Published by Vital City · vitalcitynyc.org</span>
         </div>
       </div>
     </>
