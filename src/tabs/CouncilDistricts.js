@@ -524,7 +524,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
         <div className="border-t border-gray-200 px-4 sm:px-5 pt-3 pb-4">
           <ul className="space-y-2.5">
             {findings.map((b, i) => (
-              <li key={i} className="flex gap-2.5 font-serif text-[14px] leading-relaxed text-gray-700">
+              <li key={i} className="flex gap-2.5 text-[15px] leading-relaxed text-gray-700">
                 <span className="text-gray-300 flex-shrink-0 mt-[1px]">▪</span>
                 <span>{renderFinding(b)}</span>
               </li>
@@ -533,7 +533,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                 figure rather than any single precinct's. Set off in amber so it reads as a note
                 about the measure, not another finding. */}
             {districtVolatility && (
-              <li className="font-serif text-[14px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
+              <li className="text-[15px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
                   style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)' }}>
                 <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
                 {volatilitySentence(districtVolatility, 'district')}

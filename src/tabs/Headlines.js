@@ -18,10 +18,17 @@ import {
 /* ------------------------------------------------------------------ */
 const LocatorMap = ({ activeGeo, onSelectGeo, width = 190, height = 150 }) => {
   const [hover, setHover] = useState(null);
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const wrapRef = React.useRef(null);
   const pathFn = useMemo(() => {
     const projection = geoMercator().fitSize([width, height], precinctGeoJSON);
     return geoPath().projection(projection);
   }, [width, height]);
+  const handleMouse = (e) => {
+    if (!wrapRef.current) return;
+    const r = wrapRef.current.getBoundingClientRect();
+    setPos({ x: e.clientX - r.left, y: e.clientY - r.top });
+  };
 
   const isPrecinct = activeGeo.includes('Precinct');
   const isBorough = PATROL_BOROUGH_NAMES.includes(activeGeo);
@@ -33,9 +40,10 @@ const LocatorMap = ({ activeGeo, onSelectGeo, width = 190, height = 150 }) => {
     : isBorough ? activeGeo
     : `${activeGeo}${PRECINCT_NEIGHBORHOODS[activeGeo] ? ` · ${PRECINCT_NEIGHBORHOODS[activeGeo]}` : ''}`;
 
+  const hoverName = hover != null ? toOrdinalPrecinct(hover) : null;
   return (
-    <div className="p-4 bg-gray-50 rounded-sm border border-gray-200">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto">
+    <div ref={wrapRef} className="relative p-4 bg-gray-50 rounded-sm border border-gray-200">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" onMouseMove={onSelectGeo ? handleMouse : undefined}>
         {precinctGeoJSON.features.map(f => {
           const num = parseInt(f.properties.precinct, 10);
           const boro = precinctPatrolBorough(String(num));
@@ -58,7 +66,15 @@ const LocatorMap = ({ activeGeo, onSelectGeo, width = 190, height = 150 }) => {
           );
         })}
       </svg>
+      {/* Hover tooltip naming the precinct + neighborhood (Josh's request) */}
+      {onSelectGeo && hoverName && (
+        <div className="absolute z-10 pointer-events-none bg-white border border-gray-300 px-2 py-1 text-[10px] font-bold text-black whitespace-nowrap"
+          style={{ left: Math.min(pos.x + 12, 150), top: Math.max(0, pos.y - 26) }}>
+          {hoverName}{PRECINCT_NEIGHBORHOODS[hoverName] ? ` · ${PRECINCT_NEIGHBORHOODS[hoverName].split(',')[0]}` : ''}
+        </div>
+      )}
       <p className="text-[11px] font-bold text-gray-700 mt-1.5 leading-tight">{label}</p>
+      {onSelectGeo && <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">Click any precinct to see its local trends.</p>}
     </div>
   );
 };
@@ -136,7 +152,7 @@ const NationalSidebar = ({ rtciData, downloadCSV }) => {
   return (
     <aside className="p-5 bg-gray-50 rounded-sm border border-gray-200 h-full">
       <h3 className="text-[10px] font-black uppercase tracking-[0.15em] text-gray-400">How NYC Compares</h3>
-      <p className="text-[12px] font-serif text-gray-600 mt-0.5 mb-3">12-month rolling rate per 100k residents</p>
+      <p className="text-[12px] text-gray-600 mt-0.5 mb-3">12-month rolling rate per 100k residents</p>
       <div className="flex flex-wrap gap-1.5 mb-2">
         {metrics.map(m => (
           <button key={m.key} onClick={() => setActiveMetric(m.key)}
@@ -370,10 +386,10 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
 
   return (
     <div>
-      {isTouristPrecinct && <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm font-serif italic text-gray-700"><strong>Context Note:</strong> {formatGeoName(activeGeo)} is a high-traffic hub with few residents; crime rates primarily reflect commercial/visitor density.</div>}
+      {isTouristPrecinct && <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm italic text-gray-700"><strong>Context Note:</strong> {formatGeoName(activeGeo)} is a high-traffic hub with few residents; crime rates primarily reflect commercial/visitor density.</div>}
 
       {stale && (
-        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)', borderColor: '#dde44c' }}>
+        <div className="mb-6 p-4 border-l-4 text-sm text-gray-800" style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)', borderColor: '#dde44c' }}>
           <strong className="font-black">These figures are out of date.</strong> The NYPD publishes a separate
           weekly file for each geography, and the one for {formatGeoName(activeGeo)} was last updated for the week
           ending {stale.asOf} — {stale.weeksBehind} {stale.weeksBehind === 1 ? 'week' : 'weeks'} behind the rest of
@@ -381,7 +397,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </div>
       )}
       {['Bronx North', 'Bronx South'].includes(activeGeo) && (
-        <div className="mb-6 p-4 border-l-4 text-sm font-serif text-gray-800" style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)', borderColor: '#dde44c' }}>
+        <div className="mb-6 p-4 border-l-4 text-sm text-gray-800" style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)', borderColor: '#dde44c' }}>
           <strong className="font-black">A new command.</strong> The NYPD divided Patrol Borough Bronx into
           Bronx North and Bronx South on May 20, 2026. Precinct boundaries did not change, so the department
           restated both commands across the whole period rather than starting them in May: the figures here cover
@@ -389,7 +405,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </div>
       )}
       {rollingUnavailable && (
-        <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm font-serif text-gray-700">
+        <div className="mb-6 p-4 bg-gray-50 border-l-4 border-gray-400 text-sm text-gray-700">
           The weekly series behind the 52-week view couldn't be loaded, so these figures are still year-to-date.
         </div>
       )}
@@ -421,7 +437,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
                 <span className={`tabular-nums font-black ml-auto sm:ml-0 text-right sm:text-left w-24 sm:w-32 whitespace-nowrap ${i === 0 ? 'text-[16px] sm:text-[20px]' : 'text-[16px]'}`} style={{ color: (pct ?? 0) > 0 ? '#d2232a' : (pct ?? 0) < 0 ? '#57aa4a' : '#374151' }}>
                   {dirPct(pct)}
                 </span>
-                <span className="text-[12px] sm:text-[11px] text-gray-600 tabular-nums basis-full sm:basis-auto sm:whitespace-nowrap">
+                <span className="text-[12px] text-gray-600 tabular-nums basis-full sm:basis-auto sm:whitespace-nowrap">
                   {c19 ? <>{c19.y2019.toLocaleString()} in 2019</>
                     : <>{s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the year before' : <>{yy(endYear - 1)} {periodWord}</>}</>}
                   <span className="mx-1.5 font-bold" style={{ color: (pct ?? 0) > 0 ? '#d2232a' : (pct ?? 0) < 0 ? '#57aa4a' : '#6b7280' }} aria-label={(pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
@@ -473,11 +489,11 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         <div className="lg:col-span-2 p-6 bg-white rounded-sm border border-gray-200">
           <h2 className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400 mb-4">Patterns and outliers</h2>
           {bullets.length === 0 && !volatility ? (
-            <p className="font-serif text-[15px] text-gray-500 italic">Nothing unusual stands out in this period's data.</p>
+            <p className="text-[15px] text-gray-500 italic">Nothing unusual stands out in this period's data.</p>
           ) : (
             <ul className="space-y-3.5">
               {bullets.map((b, i) => (
-                <li key={i} className="flex gap-3 font-serif text-[15px] leading-relaxed text-gray-700">
+                <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-gray-700">
                   <span className="text-gray-300 flex-shrink-0 mt-[1px]">▪</span>
                   <span>{renderBullet(b, onSelectGeo || (() => {}))}</span>
                 </li>
@@ -485,7 +501,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
               {/* How much the figure above has already moved this year. Set off in amber so it
                   reads as a caveat about the measure rather than another finding about crime. */}
               {volatility && (
-                <li className="font-serif text-[15px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
+                <li className="text-[15px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
                     style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)' }}>
                   <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
                   {volatilitySentence(volatility, volatilityNoun)}

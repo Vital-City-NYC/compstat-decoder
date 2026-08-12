@@ -11,6 +11,10 @@
 /* Gascogne ships in Light only; let display headings use it at its true weight
    instead of a synthesized faux-bold. Bold spans inside serif body text still embolden. */
 h1.font-serif, h2.font-serif, h3.font-serif { font-weight: 300; }
+/* Halyard's tnum feature substitutes a digit-width word space (measured 7.2px vs 2.4px
+   at 11px), which made prose with tabular-nums read as gappy. Neutralize the utility —
+   Halyard's default figures are uniform enough for this site's columns. */
+.tabular-nums { font-variant-numeric: normal; }
 
 /* Print: a single letter-size one-pager for the current council district.
    Everything on screen is marked print:hidden; the one-pager is hidden:print:block. */

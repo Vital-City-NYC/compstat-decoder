@@ -405,7 +405,7 @@ export default function App() {
   // LIVE COMPSTAT DASHBOARD
   // ==========================================
   return (
-    <div className="min-h-screen pb-12 font-sans bg-white text-black text-[15px]">
+    <div className="min-h-screen pb-12 font-sans bg-white text-black text-[16px]">
       <div className="max-w-[1100px] mx-auto px-5 sm:px-8">
 
         {/* Single-row navigation: brand, section tabs, geography, period toggle */}
