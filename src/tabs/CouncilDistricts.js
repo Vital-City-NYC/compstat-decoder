@@ -505,27 +505,23 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       <div className="print:hidden">
       {/* The district selector is the page title. Arrows pin to the row edges (title
           absorbs the slack) so they never shift as member-name length changes. */}
-      {/* Title row: district selector on the left, subscribe band beside it so the
-          sign-up is visible on opening rather than after a full-page scroll. */}
-      <div className="flex flex-col lg:flex-row lg:items-start gap-4 lg:gap-6 mb-6">
-        <div className="flex items-start gap-1.5 sm:gap-3 flex-shrink-0">
+      {/* District header merged into the top-lines card: the selector + arrows are the
+          card's header row, with the bullets under a hairline — one box instead of a
+          separate title row, so the content below starts higher on the screen. */}
+      <div className="mb-6 bg-gray-50 rounded-sm border border-gray-200">
+        <div className="flex items-start gap-1.5 sm:gap-3 px-4 sm:px-5 pt-3.5 pb-3">
           <button
             onClick={() => setDistrictNum(district.district <= 1 ? 51 : district.district - 1)}
-            className="px-2 sm:px-2.5 py-1.5 sm:py-2 text-[13px] font-black border border-gray-300 rounded hover:bg-gray-50 flex-shrink-0 mt-1" aria-label="Previous district">←</button>
+            className="px-2 sm:px-2.5 py-1.5 sm:py-2 text-[13px] font-black border border-gray-300 rounded bg-white hover:bg-gray-100 flex-shrink-0 mt-1" aria-label="Previous district">←</button>
           <div className="w-[440px] max-w-full"><DistrictTitleSelector districts={districts} district={district} setDistrictNum={setDistrictNum} /></div>
           <button
             onClick={() => setDistrictNum(district.district >= 51 ? 1 : district.district + 1)}
-            className="px-2 sm:px-2.5 py-1.5 sm:py-2 text-[13px] font-black border border-gray-300 rounded hover:bg-gray-50 flex-shrink-0 mt-1" aria-label="Next district">→</button>
+            className="px-2 sm:px-2.5 py-1.5 sm:py-2 text-[13px] font-black border border-gray-300 rounded bg-white hover:bg-gray-100 flex-shrink-0 mt-1" aria-label="Next district">→</button>
         </div>
-        <div className="flex-1 min-w-0">
-          <SubscribeBand compact district={district} districts={districts} f={f} rows={rows} period={period} />
-        </div>
-      </div>
 
       {/* Auto-generated top-line findings */}
       {findings.length > 0 && (
-        <div className="mb-6 p-5 bg-gray-50 rounded-sm border border-gray-200">
-          <h4 className="text-[11px] font-black uppercase tracking-[0.15em] text-gray-400 mb-3">Top-lines:</h4>
+        <div className="border-t border-gray-200 px-4 sm:px-5 pt-3 pb-4">
           <ul className="space-y-2.5">
             {findings.map((b, i) => (
               <li key={i} className="flex gap-2.5 font-serif text-[14px] leading-relaxed text-gray-700">
@@ -546,6 +542,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
           </ul>
         </div>
       )}
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-8 items-start">
         <DistrictMap
@@ -673,6 +670,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       )}
 
       {/* Email-updates signup (mock: no delivery service connected yet) */}
+      <SubscribeBand district={district} districts={districts} f={f} rows={rows} period={period} />
       </div>
 
       {/* Print-only one-page district report (Download PDF -> browser Save as PDF) */}
