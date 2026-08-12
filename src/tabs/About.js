@@ -18,7 +18,7 @@ const A = ({ href, children }) => (
 );
 const Code = ({ children }) => <code className="text-[12px]">{children}</code>;
 
-export default function About({ contextData, parsedData, fetchError }) {
+export default function About({ contextData, parsedData, feedWeekEnd, fetchError }) {
   const ctx = contextData;
   const rev = ctx?.revisions;
   const expand = (n) => (expandCrime(n) || String(n || '').toLowerCase());
@@ -202,8 +202,8 @@ export default function About({ contextData, parsedData, fetchError }) {
 
       <div className="mt-10 pt-6 border-t border-gray-200 text-[13px] text-gray-500 leading-snug">
         <p className="mb-2">
-          {parsedData.period?.week_end
-            ? `Data through the CompStat week ending ${parsedData.period.week_end.replace(/\/20(\d\d)$/, '/$1')}.`
+          {(feedWeekEnd || parsedData.period?.week_end)
+            ? `Data through the CompStat week ending ${(feedWeekEnd || parsedData.period.week_end).replace(/\/20(\d\d)$/, '/$1')}.`
             : 'Data date unavailable.'} Page rendered {new Date().toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}.{fetchError && ' The live feed could not be reached — figures shown are an embedded snapshot from that older week.'}
         </p>
         <p><a href="https://github.com/tedalcorn/compstat-decoder" className="underline hover:text-black" target="_blank" rel="noopener noreferrer">View source on GitHub →</a></p>

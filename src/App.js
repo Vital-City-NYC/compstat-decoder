@@ -570,7 +570,7 @@ export default function App() {
           />
         )}
         {mainTab === 'about' && (
-          <About contextData={contextData} parsedData={parsedData} fetchError={fetchError} />
+          <About contextData={contextData} parsedData={parsedData} feedWeekEnd={rawData?.citywide?.report_period?.week_end} fetchError={fetchError} />
         )}
         </>)}
       </div>
