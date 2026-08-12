@@ -3,7 +3,7 @@ import {
   FALLBACK_DATA, GITHUB_USER, REPO_NAME, REPO_SELF, CITYWIDE_POPULATION, VOLATILITY_THRESHOLD,
   GEO_POPULATIONS, PRECINCT_NEIGHBORHOODS, TOURIST_PRECINCTS, VIOLENT_CRIMES, PROPERTY_CRIMES,
   safeNum, calcPct, formatGeoName, toOrdinalPrecinct, precinctPatrolBorough, PATROL_BOROUGH_NAMES,
-  SearchIcon, Navigation, RefreshCw, Activity,
+  SearchIcon, Navigation, RefreshCw,
   RTCI_CSV_URL, parseRTCIcsv, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED,
   ROLLING_URL,
 } from './shared';
@@ -66,6 +66,19 @@ export default function App() {
   const [rollingData, setRollingData] = useState(null);
   const [rollingState, setRollingState] = useState('idle'); // idle | loading | ready | error
   const [isLocating, setIsLocating] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const copyLink = () => {
+    const url = window.location.href;
+    const fallback = () => {
+      const ta = document.createElement('textarea');
+      ta.value = url; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch {}
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(url).catch(fallback); else fallback();
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 1600);
+  };
 
   // Map state ('volume' was retired as a map mode; normalize legacy links to 'rate')
   const [mapCrime, setMapCrime] = useState(initialParams.get('mapCrime') || 'all');
@@ -423,7 +436,7 @@ export default function App() {
               onClick={() => { setActiveGeo('citywide'); setMainTab('headlines'); }}
               aria-pressed={mainTab === 'headlines'}
               title="Home — citywide headlines"
-              className={`text-[10px] font-black uppercase tracking-wider flex-shrink-0 py-1.5 border-b-2 transition-colors ${mainTab === 'headlines' ? 'border-black text-black' : 'border-transparent text-black hover:text-[#ff7c53]'}`}>
+              className={`text-[11px] font-black uppercase tracking-wider flex-shrink-0 py-1.5 border-b-2 transition-colors ${mainTab === 'headlines' ? 'border-black text-black' : 'border-transparent text-black hover:text-[#ff7c53]'}`}>
               NYC CompStat Decoder
             </button>
           </div>
@@ -500,12 +513,13 @@ export default function App() {
             </div>
             <div className="flex items-center gap-2.5">
             <div className="flex border border-gray-300 rounded overflow-hidden shrink-0">
-              <button onClick={() => !weeklyOff && setActiveTab('wtd')} disabled={weeklyOff} aria-pressed={activeTab === 'wtd'} title={weeklyOff ? 'Weekly data is not available on this view' : 'This CompStat week vs the same week last year'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${weeklyOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'wtd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Wk</button>
-              <button onClick={() => setActiveTab('ytd')} aria-pressed={activeTab === 'ytd'} title="Year-to-date vs the same period last year" className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${activeTab === 'ytd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>YTD</button>
-              <button onClick={() => !rollingOff && setActiveTab('r52')} disabled={rollingOff} aria-pressed={activeTab === 'r52'} title={rollingOff ? 'The rolling window is not available on this view' : 'The last 52 weeks vs the 52 weeks before them — a window that never changes length'} className={`px-2 py-1.5 text-[10px] font-black uppercase tracking-wide transition-colors ${rollingOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'r52' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>52WK</button>
+              <button onClick={() => !weeklyOff && setActiveTab('wtd')} disabled={weeklyOff} aria-pressed={activeTab === 'wtd'} title={weeklyOff ? 'Weekly data is not available on this view' : 'This CompStat week vs the same week last year'} className={`px-2 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${weeklyOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'wtd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Week</button>
+              <button onClick={() => setActiveTab('ytd')} aria-pressed={activeTab === 'ytd'} title="Year-to-date vs the same period last year" className={`px-2 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${activeTab === 'ytd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>YTD</button>
+              <button onClick={() => !rollingOff && setActiveTab('r52')} disabled={rollingOff} aria-pressed={activeTab === 'r52'} title={rollingOff ? 'The rolling window is not available on this view' : 'The last 52 weeks vs the 52 weeks before them — a window that never changes length'} className={`px-2 py-1.5 text-[11px] font-black uppercase tracking-wide transition-colors ${rollingOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'r52' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Past year</button>
             </div>
-            <button onClick={() => setAppView('historic')} title="The 30-year transformation of NYC crime" className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
-              <Activity size={12} /> 30-Yr
+            <button onClick={copyLink} title="Copy a link to exactly this view — geography and time window included" className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              {linkCopied ? 'Copied \u2713' : 'Copy link'}
             </button>
             </div>
           </div>

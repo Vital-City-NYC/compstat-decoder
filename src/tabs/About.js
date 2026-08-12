@@ -185,7 +185,7 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
 
       <H>The 30-year page</H>
       <P>
-        The &ldquo;30-Year Transformation&rdquo; page draws on the same historical series, plus citywide
+        The <A href="?view=historic">30-Year Transformation</A> page draws on the same historical series, plus citywide
         misdemeanor assault counts for 2000&ndash;2024 from the NYPD&rsquo;s historical misdemeanor tables.
         Its precinct scatterplot pairs precinct poverty rates against per-100,000 offense rates; Vital City
         has not independently verified those underlying figures, and they should be read as illustrative.
