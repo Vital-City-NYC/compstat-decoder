@@ -59,7 +59,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
 
   return (
     <div className="relative">
-      <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: 'max(420px, calc(100vh - 340px))' }} onMouseMove={handleMouse}>
+      <svg ref={svgRef} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxHeight: 'max(440px, calc(100vh - 285px))', display: 'block', marginInline: 'auto' }} onMouseMove={handleMouse}>
         <defs>
           <pattern id="tourist-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2="6" stroke="#1f2937" strokeOpacity="0.5" strokeWidth="1" />
