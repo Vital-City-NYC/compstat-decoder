@@ -171,7 +171,7 @@ export default function Transit({ rawData, downloadCSV }) {
       {/* Headline on the left; a compact vertical table of the same figures on the right. */}
       <section className="mb-8 pb-6 border-b border-gray-200 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-x-12 gap-y-6 items-start">
         <h2 className="text-2xl sm:text-3xl font-black leading-[1.12] tracking-tight text-black">
-          On subways and buses, <span style={{ color: (ytd.pct_change ?? 0) > 0 ? '#c2410c' : '#15803d' }}>major felony incidents are {(ytd.pct_change ?? 0) > 0 ? 'up' : 'down'} {Math.abs(ytd.pct_change ?? 0).toFixed(1).replace(/\.0$/, '')}%</span> year-to-date{typeof ytd.current_year === 'number' && typeof ytd.prior_year === 'number' ? ` (${ytd.current_year.toLocaleString()} in ${yy(endYear)} YTD vs ${ytd.prior_year.toLocaleString()} in ${yy(endYear - 1)} YTD)` : ''}.
+          On subways and buses, <span style={{ color: (ytd.pct_change ?? 0) > 0 ? '#d2232a' : '#57aa4a' }}>major felony incidents are {(ytd.pct_change ?? 0) > 0 ? 'up' : 'down'} {Math.abs(ytd.pct_change ?? 0).toFixed(1).replace(/\.0$/, '')}%</span> year-to-date{typeof ytd.current_year === 'number' && typeof ytd.prior_year === 'number' ? ` (${ytd.current_year.toLocaleString()} in ${yy(endYear)} YTD vs ${ytd.prior_year.toLocaleString()} in ${yy(endYear - 1)} YTD)` : ''}.
         </h2>
         <div className="lg:min-w-[260px] p-4 bg-gray-50 rounded-sm border border-gray-200">
           <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Major felony incidents</div>

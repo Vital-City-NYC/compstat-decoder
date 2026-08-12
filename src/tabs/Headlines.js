@@ -399,7 +399,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </p>
       </div>
       <h1 className="text-[22px] sm:text-[26px] lg:text-[29px] font-black leading-[1.15] tracking-tight mb-5 text-black">
-        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
+        <span style={{ color: totals.diff > 0 ? '#d2232a' : '#57aa4a' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
       </h1>
 
       {/* Topline trends (left) with the locator map aligned to the top of the table (right) */}
@@ -418,13 +418,13 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
                   <div className={i === 0 ? 'text-[15px] font-black leading-tight' : 'text-[13px] font-bold text-gray-700 leading-tight'}>{s.label}</div>
                   <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{s.sub}</div>
                 </div>
-                <span className={`tabular-nums font-black ml-auto sm:ml-0 text-right sm:text-left w-24 sm:w-32 whitespace-nowrap ${i === 0 ? 'text-[16px] sm:text-[20px]' : 'text-[16px]'}`} style={{ color: (pct ?? 0) > 0 ? '#c2410c' : (pct ?? 0) < 0 ? '#15803d' : '#374151' }}>
+                <span className={`tabular-nums font-black ml-auto sm:ml-0 text-right sm:text-left w-24 sm:w-32 whitespace-nowrap ${i === 0 ? 'text-[16px] sm:text-[20px]' : 'text-[16px]'}`} style={{ color: (pct ?? 0) > 0 ? '#d2232a' : (pct ?? 0) < 0 ? '#57aa4a' : '#374151' }}>
                   {dirPct(pct)}
                 </span>
                 <span className="text-[12px] sm:text-[11px] text-gray-600 tabular-nums basis-full sm:basis-auto sm:whitespace-nowrap">
                   {c19 ? <>{c19.y2019.toLocaleString()} in 2019</>
                     : <>{s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the year before' : <>{yy(endYear - 1)} {periodWord}</>}</>}
-                  <span className="mx-1.5 font-bold" style={{ color: (pct ?? 0) > 0 ? '#c2410c' : (pct ?? 0) < 0 ? '#15803d' : '#6b7280' }} aria-label={(pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
+                  <span className="mx-1.5 font-bold" style={{ color: (pct ?? 0) > 0 ? '#d2232a' : (pct ?? 0) < 0 ? '#57aa4a' : '#6b7280' }} aria-label={(pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
                     {(pct ?? 0) > 0 ? '↗' : (pct ?? 0) < 0 ? '↘' : '→'}
                   </span>
                   <strong className="font-black text-gray-900">

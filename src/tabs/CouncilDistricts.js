@@ -160,7 +160,7 @@ const lowDir = (v) => dirPct(v).toLowerCase();
 
 // Directional phrases in the findings get bolded and colored — red for rising crime,
 // green for falling. {up:..} / {dn:..} tokens are expanded by renderFinding.
-const UP_COLOR = '#c2410c', DN_COLOR = '#15803d';
+const UP_COLOR = '#d2232a', DN_COLOR = '#57aa4a';
 const upTok = (t) => `{up:${t}}`;
 const dnTok = (t) => `{dn:${t}}`;
 const cPct = (pct) => (pct > 0 ? upTok : dnTok)(lowDir(pct)); // "down 7.6%", colored by sign
