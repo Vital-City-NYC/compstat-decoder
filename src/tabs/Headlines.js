@@ -3,7 +3,7 @@ import { geoPath, geoMercator } from 'd3-geo';
 import crimeHistory from '../data/crime_history.json';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import {
-  CW, VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
+  VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatRate, formatGeoName, geoWithArticle, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
   calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDateFull, staleGeo,
@@ -376,18 +376,6 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
       {/* Topline trends (left) with the locator map aligned to the top of the table (right) */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
         <div className="lg:col-span-2 relative">
-          {activeGeo === 'citywide' && (() => {
-            const cwTotals = CW.map(d => d.BU + d.FA + d.GA + d.GL + d.MU + d.RA + d.RO);
-            const maxT = Math.max(...cwTotals);
-            const w = 220; const h = 56;
-            const pts = cwTotals.map((v, i) => `${(i / (cwTotals.length - 1)) * w},${h - (v / maxT) * h}`).join(' ');
-            const area = pts + ` ${w},${h} 0,${h}`;
-            return (
-              <svg width={w} height={h} className="absolute bottom-8 left-0 opacity-[0.07] pointer-events-none" preserveAspectRatio="none">
-                <polygon points={area} fill={VC.black} />
-              </svg>
-            );
-          })()}
           <div className="divide-y divide-gray-100 border-y border-gray-200">
             {statLines.map((s, i) => (
               <div key={s.label} className="flex items-baseline flex-wrap gap-x-4 sm:gap-x-6 gap-y-1 py-2.5">
