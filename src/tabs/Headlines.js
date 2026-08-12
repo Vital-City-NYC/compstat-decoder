@@ -414,9 +414,25 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           Every week the New York City Police Department updates data on reported crime in precincts across the city, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
         </p>
       </div>
+      {/* Precinct rate vs citywide — the one comparison a resident can't compute from
+          counts alone. Same window on both sides; hidden on the weekly view (per-100k
+          on one week is noise) and for tourist hubs / precincts with no population. */}
       <h1 className="text-[22px] sm:text-[26px] lg:text-[29px] font-black leading-[1.15] tracking-tight mb-5 text-black">
         <span style={{ color: totals.diff > 0 ? '#d2232a' : '#57aa4a' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
       </h1>
+      {activeGeo.includes('Precinct') && !isTouristPrecinct && activePop && activeTab !== 'wtd' && totals.citywideRate > 0 && (() => {
+        const localRate = (totals.mCur / activePop) * 100000;
+        const cw = totals.citywideRate;
+        const diffPct = ((localRate - cw) / cw) * 100;
+        const cmp = Math.abs(diffPct) < 1 ? 'about the same as' : `${Math.round(Math.abs(diffPct))}% ${diffPct > 0 ? 'higher' : 'lower'} than`;
+        return (
+          <p className="-mt-3 mb-5 text-[15px] leading-snug text-gray-600">
+            The precinct&rsquo;s major-crime rate {activeTab === 'ytd' ? 'so far this year' : 'over the last 52 weeks'} is{' '}
+            <strong className="font-black text-black">{formatRate(localRate)} per 100,000 residents</strong> — {cmp} the
+            citywide rate of {formatRate(cw)}.
+          </p>
+        );
+      })()}
 
       {/* Topline trends (left) with the locator map aligned to the top of the table (right) */}
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
