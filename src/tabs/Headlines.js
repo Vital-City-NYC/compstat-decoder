@@ -267,7 +267,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
   if (isCitywide || isBorough) {
     const spike = hotspots?.topPctSpike;
     if (spike && typeof spike.pct === 'number' && spike.pct >= 25) {
-      bullets.push(`**The sharpest local decline is ${expandCrime(spike.crime)} in the [[${toOrdinalPrecinct(spike.precinct)}]]:** up ${Math.round(spike.pct)}% ${periodWord}, from ${spike.prior.toLocaleString()} to ${spike.current.toLocaleString()}.`);
+      bullets.push(`**The sharpest local increase is ${expandCrime(spike.crime)} in the [[${toOrdinalPrecinct(spike.precinct)}]]:** up ${Math.round(spike.pct)}% ${periodWord}, from ${spike.prior.toLocaleString()} to ${spike.current.toLocaleString()}.`);
     }
     const drop = hotspots?.topPctDrop;
     if (drop && typeof drop.pct === 'number' && drop.pct <= -25) {
