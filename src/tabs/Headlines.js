@@ -328,6 +328,35 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
     { label: 'Property index', sub: 'Burglary, grand larceny, auto theft', cur: property.cur, pri: property.pri, pct: property.pct },
   ];
 
+  // Optional 2019 (pre-pandemic) comparison for the year-to-date view. 2019 is that
+  // calendar year's actual; the current year is projected to a full-year equivalent from
+  // its YTD pace (cur ÷ pri × prior full year), so both sides are full-year quantities —
+  // we have no weekly 2019 series to do a true same-period comparison. Offered only where
+  // the 30-year history covers the geography (citywide and most precincts; not boroughs).
+  const [vs2019, setVs2019] = useState(false);
+  const cmp2019 = (() => {
+    if (activeTab !== 'ytd') return null;
+    let rows = null;
+    if (activeGeo === 'citywide') rows = crimeHistory.citywide;
+    else if (crimeHistory.precincts[activeGeo]) rows = Object.entries(crimeHistory.precincts[activeGeo]).map(([y, o]) => ({ y: +y, ...o }));
+    if (!rows) return null;
+    const byYear = {};
+    rows.forEach(r => { byYear[r.y] = r; });
+    const r2019 = byYear[2019], rPri = byYear[endYear - 1];
+    if (!r2019 || !rPri) return null;
+    const sum = (row, names) => (names.every(n => typeof row[n] === 'number') ? names.reduce((a, n) => a + row[n], 0) : null);
+    const make = (names, s) => {
+      const y2019 = sum(r2019, names), priFull = sum(rPri, names);
+      if (y2019 == null || y2019 === 0 || !priFull || !s.pri) return null;
+      const proj = Math.round(s.cur * (priFull / s.pri));
+      return { y2019, proj, pct: calcPct(proj, y2019) };
+    };
+    const sets = [[...MAJOR_VIOLENT, ...MAJOR_PROPERTY], MAJOR_VIOLENT, MAJOR_PROPERTY];
+    const out = statLines.map((s, i) => make(sets[i], s));
+    return out.every(Boolean) ? out : null;
+  })();
+  const show2019 = vs2019 && !!cmp2019;
+
   const bullets = buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isTouristPrecinct });
 
   // Year-to-date volatility applies only to the year-to-date view; the weekly toggle shows a
@@ -377,25 +406,35 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 items-start">
         <div className="lg:col-span-2 relative">
           <div className="divide-y divide-gray-100 border-y border-gray-200">
-            {statLines.map((s, i) => (
+            {statLines.map((s, i) => {
+              // In 2019-comparison mode the row swaps to full-year quantities: 2019 actual
+              // vs the current year projected from its YTD pace.
+              const c19 = show2019 ? cmp2019[i] : null;
+              const pct = c19 ? c19.pct : s.pct;
+              return (
               <div key={s.label} className="flex items-baseline flex-wrap gap-x-4 sm:gap-x-6 gap-y-1 py-2.5">
                 {/* Descriptor sits light under the term so it reads as its definition */}
                 <div className="w-36 sm:w-40 flex-shrink-0">
                   <div className={i === 0 ? 'text-[15px] font-black leading-tight' : 'text-[13px] font-bold text-gray-700 leading-tight'}>{s.label}</div>
                   <div className="text-[11px] text-gray-400 leading-tight mt-0.5">{s.sub}</div>
                 </div>
-                <span className={`tabular-nums font-black ml-auto sm:ml-0 text-right sm:text-left w-24 sm:w-32 whitespace-nowrap ${i === 0 ? 'text-[16px] sm:text-[20px]' : 'text-[16px]'}`} style={{ color: (s.pct ?? 0) > 0 ? '#c2410c' : (s.pct ?? 0) < 0 ? '#15803d' : '#374151' }}>
-                  {dirPct(s.pct)}
+                <span className={`tabular-nums font-black ml-auto sm:ml-0 text-right sm:text-left w-24 sm:w-32 whitespace-nowrap ${i === 0 ? 'text-[16px] sm:text-[20px]' : 'text-[16px]'}`} style={{ color: (pct ?? 0) > 0 ? '#c2410c' : (pct ?? 0) < 0 ? '#15803d' : '#374151' }}>
+                  {dirPct(pct)}
                 </span>
                 <span className="text-[12px] sm:text-[11px] text-gray-600 tabular-nums basis-full sm:basis-auto sm:whitespace-nowrap">
-                  {s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the year before' : <>{yy(endYear - 1)} {periodWord}</>}
-                  <span className="mx-1.5 font-bold" style={{ color: (s.pct ?? 0) > 0 ? '#c2410c' : (s.pct ?? 0) < 0 ? '#15803d' : '#6b7280' }} aria-label={(s.pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
-                    {(s.pct ?? 0) > 0 ? '↗' : (s.pct ?? 0) < 0 ? '↘' : '→'}
+                  {c19 ? <>{c19.y2019.toLocaleString()} in 2019</>
+                    : <>{s.pri.toLocaleString()} in {activeTab === 'r52' ? 'the year before' : <>{yy(endYear - 1)} {periodWord}</>}</>}
+                  <span className="mx-1.5 font-bold" style={{ color: (pct ?? 0) > 0 ? '#c2410c' : (pct ?? 0) < 0 ? '#15803d' : '#6b7280' }} aria-label={(pct ?? 0) > 0 ? 'rose to' : 'fell to'}>
+                    {(pct ?? 0) > 0 ? '↗' : (pct ?? 0) < 0 ? '↘' : '→'}
                   </span>
-                  <strong className="font-black text-gray-900">{s.cur.toLocaleString()} in {activeTab === 'r52' ? 'the last 52 weeks' : <>{yy(endYear)} {periodWord}</>}</strong>
+                  <strong className="font-black text-gray-900">
+                    {c19 ? <>{c19.proj.toLocaleString()} projected for {yy(endYear)}</>
+                      : <>{s.cur.toLocaleString()} in {activeTab === 'r52' ? 'the last 52 weeks' : <>{yy(endYear)} {periodWord}</>}</>}
+                  </strong>
                 </span>
               </div>
-            ))}
+              );
+            })}
           </div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
             <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}`
@@ -413,6 +452,18 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
               </>
             )}
           </div>
+          {/* Discreet 2019 toggle, below the metadata note (Josh's request). */}
+          {activeTab === 'ytd' && cmp2019 && (
+            <div className="mt-1 text-[12px] text-gray-400">
+              <button type="button" onClick={() => setVs2019(v => !v)}
+                className="underline decoration-dotted underline-offset-2 hover:text-black">
+                {show2019 ? 'Compare to last year instead' : 'Compare to the 2019 (pre-pandemic) trend'}
+              </button>
+              {show2019 && (
+                <span className="ml-2">2019 is that year&rsquo;s actual; {yy(endYear)} is projected from its year-to-date pace.</span>
+              )}
+            </div>
+          )}
         </div>
         <LocatorMap activeGeo={activeGeo} onSelectGeo={onSelectGeo} />
       </section>

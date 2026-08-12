@@ -195,7 +195,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
 
   if (signedUp) {
     return (
-      <div className={`rounded-sm ${compact ? 'p-4' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
+      <div className={`rounded-sm ${compact ? 'p-3' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
         <div className={`${compact ? 'text-[15px]' : 'text-[18px]'} font-black font-serif text-black`}>
           You're set: {cadence.toLowerCase()} updates on Council District {effective.district}.
         </div>
@@ -214,10 +214,10 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   }
 
   return (
-    <form onSubmit={submit} className={`rounded-sm ${compact ? 'p-4' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
+    <form onSubmit={submit} className={`rounded-sm ${compact ? 'p-3' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
       {/* Title row: bold title + address link in parentheses */}
-      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${compact ? 'mb-2.5' : 'mb-4'}`}>
-        <h4 className={`${compact ? 'text-[14px]' : 'text-[16px] sm:text-[19px]'} font-black font-serif text-black leading-tight`}>
+      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${compact ? 'mb-1.5' : 'mb-4'}`}>
+        <h4 className={`${compact ? 'text-[13px]' : 'text-[16px] sm:text-[19px]'} font-black font-serif text-black leading-tight`}>
           Subscribe for updates on crime trends in Council District {effective.district}
         </h4>
         {!addressMode && (
@@ -255,20 +255,20 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
 
       {/* Input row: email, cadence segmented control, sign up. On mobile each control
           fills the citron box edge-to-edge (equal left/right margins); inline on desktop. */}
-      <div className="flex flex-wrap items-stretch gap-x-3 gap-y-2">
+      <div className={`flex flex-wrap items-stretch ${compact ? 'gap-x-2 gap-y-1.5' : 'gap-x-3 gap-y-2'}`}>
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="Your email address"
-          className="w-full sm:w-[240px] border border-gray-800 bg-white px-3 py-2 text-[13px] focus:outline-none" />
+          className={`w-full border border-gray-800 bg-white focus:outline-none ${compact ? 'sm:w-[150px] px-2 py-1.5 text-[12px]' : 'sm:w-[240px] px-3 py-2 text-[13px]'}`} />
         <div className="flex w-full sm:w-auto border border-gray-800 bg-white">
           {CADENCES.map(c => (
             <button key={c} type="button" onClick={() => setCadence(c)}
-              className={`flex-1 sm:flex-none px-3 py-2 text-[11px] font-black uppercase tracking-widest ${cadence === c ? 'bg-black text-white' : 'text-black hover:bg-black/5'}`}>
+              className={`flex-1 sm:flex-none font-black uppercase tracking-widest ${compact ? 'px-2 py-1.5 text-[10px]' : 'px-3 py-2 text-[11px]'} ${cadence === c ? 'bg-black text-white' : 'text-black hover:bg-black/5'}`}>
               {c}
             </button>
           ))}
         </div>
         <button type="submit" disabled={!emailOk}
-          className="w-full sm:w-auto text-[11px] font-black uppercase tracking-widest text-white bg-black px-5 py-2.5 disabled:opacity-40">
+          className={`w-full sm:w-auto font-black uppercase tracking-widest text-white bg-black disabled:opacity-40 ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-[11px]'}`}>
           Sign up
         </button>
       </div>
