@@ -255,11 +255,11 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
   const recovery = history ? getPrePandemicRecovery(felonies, history) : null;
   if (recovery && recovery.total > 0) {
     if (recovery.above.length === 0) {
-      bullets.push(`**All ${numWord(recovery.total)} major felonies are tracking at or below their pre-pandemic baseline (2017–19 average)**${isPrecinct ? ' in this precinct' : ''}, projected to full year.`);
+      bullets.push(`**All ${numWord(recovery.total)} major felonies are tracking at or below their pre-pandemic baseline (2017-2019 average)**${isPrecinct ? ' in this precinct' : ''}, projected to full year.`);
     } else {
       const names = recovery.above.map(a => expandCrimeTitle(a.name));
       const joined = names.length <= 1 ? names.join('') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
-      bullets.push(`**${numWord(names.length, true)} crime ${names.length === 1 ? 'type is' : 'types are'} still tracking above the pre-pandemic baseline (2017–19 average):** ${joined}.`);
+      bullets.push(`**${numWord(names.length, true)} crime ${names.length === 1 ? 'type is' : 'types are'} still tracking above the pre-pandemic baseline (2017-2019 average):** ${joined}.`);
     }
   }
 
@@ -400,7 +400,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
             <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}`
               : activeTab === 'r52' ? (rollingMeta ? `52 weeks ending ${formatPeriodDateFull(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDateFull(rollingMeta.prior_to)}` : 'Loading the weekly series…')
-              : `Week of ${period?.week_start || '—'} – ${period?.week_end || '—'}`}</span>
+              : `Week of ${period?.week_start || '—'} to ${period?.week_end || '—'}`}</span>
             <span className="text-gray-300" aria-hidden>·</span>
             {/* The provisional note belongs on every view — it carries the measured revision
                 figures in its tooltip and the link explaining them. The 52-week window adds a

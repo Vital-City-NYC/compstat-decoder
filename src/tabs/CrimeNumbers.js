@@ -10,7 +10,7 @@ import {
 /* One table for every tracked offense: volume, trend and historical   */
 /* context move together, and every column header sorts on click.      */
 /* ------------------------------------------------------------------ */
-const TREND_TOOLTIP = "Trend column shows the offense's annual citywide count back to the early 2010s. The blue band marks the 2017–2019 pre-pandemic range. Dot = current year, projected to a full-year equivalent from year-to-date data. Trends appear only for the 10 major offenses tracked in the 30-year history.";
+const TREND_TOOLTIP = "Trend column shows the offense's annual citywide count back to the early 2010s. The blue band marks the 2017-2019 pre-pandemic range. Dot = current year, projected to a full-year equivalent from year-to-date data. Trends appear only for the 10 major offenses tracked in the 30-year history.";
 
 // UCR Rape is the FBI's broader Uniform Crime Reporting definition of rape, distinct from
 // the narrower NY penal-law "Rape" major-felony line; spell it out and explain on hover.

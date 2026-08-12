@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-// import vcLogo from '../vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
+import vcLogo from '../vitalcity-logo.png';
 import { VC, pctColor, dirPct, expandCrime, formatPeriodDate } from '../shared';
 
 /* ------------------------------------------------------------------ */
@@ -71,8 +71,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
       {/* Email body */}
       <div className="bg-white px-6 py-6">
         <div className="flex items-end justify-between border-b-[3px] border-black pb-3 mb-4">
-          {/* VC logo temporarily removed pre-publication — restore <img src={vcLogo} alt="Vital City" style={{ height: '18px', width: 'auto' }} /> when approved */}
-          <span style={{ display: 'inline-block', height: '18px', width: '86px' }} aria-hidden="true" />
+          <img src={vcLogo} alt="Vital City" style={{ height: '19px', width: 'auto' }} />
           <div className="text-[9px] font-black uppercase tracking-widest text-gray-500">
             District {n} · {cadence} update
           </div>

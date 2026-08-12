@@ -92,7 +92,7 @@ export default function Transit({ rawData, downloadCSV }) {
       const cutoffDay = (maxDate.getFullYear() === year) ? maxDate.getDate() : 31;
       const monthStr = String(cutoffMonth + 1).padStart(2, '0');
       const dayStr = String(cutoffDay).padStart(2, '0');
-      const periodLabel = monthsCovered >= 11 || maxDate.getFullYear() !== year ? 'Full year' : `Jan 1 – ${maxDate.toLocaleString('en-US', { month: 'short', day: 'numeric' })}`;
+      const periodLabel = monthsCovered >= 11 || maxDate.getFullYear() !== year ? 'Full year' : `Jan 1 to ${maxDate.toLocaleString('en-US', { month: 'short', day: 'numeric' })}`;
 
       // Pick the right dataset for each year. 5uac-w243 may contain both years; qgea-i56i has older years.
       const buildQuery = (dataset, fromY, toY, m, d) => `https://data.cityofnewyork.us/resource/${dataset}.json?` +

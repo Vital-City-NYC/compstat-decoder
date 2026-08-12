@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { geoPath, geoMercator, geoContains } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import councilData from '../data/council_districts.json';
-// import vcLogo from '../vitalcity-logo.png'; // VC logo temporarily removed pre-publication — restore when approved
+import vcLogo from '../vitalcity-logo.png';
 import SubscribeBand from './Subscribe';
 import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
@@ -661,7 +661,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       {/* Shootings coverage note (below the grid, so toggling never resizes the map) */}
       {showShootings && shootingWindow && (
         <p className="mt-4 text-[11px] font-serif italic text-gray-500 leading-snug max-w-3xl">
-          {shootingWindow.total} shooting incidents were reported citywide {fmtDate(shootingWindow.from)}–{fmtDate(shootingWindow.to)}, {shootingWindow.located} of them ({Math.round((shootingWindow.located / shootingWindow.total) * 100)}%) with a precise mapped location — the rest lacked coordinates. Dots show the {shootingWindow.located} mapped incidents; click one for details. Source: NYPD Open Data, refreshed quarterly, so the most recent weeks aren't shown yet.
+          {shootingWindow.total} shooting incidents were reported citywide {fmtDate(shootingWindow.from)} to {fmtDate(shootingWindow.to)}, {shootingWindow.located} of them ({Math.round((shootingWindow.located / shootingWindow.total) * 100)}%) with a precise mapped location — the rest lacked coordinates. Dots show the {shootingWindow.located} mapped incidents; click one for details. Source: NYPD Open Data, refreshed quarterly, so the most recent weeks aren't shown yet.
         </p>
       )}
 
@@ -673,8 +673,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       <div className="hidden print:flex print:flex-col text-black leading-tight" style={{ height: '9.55in', overflow: 'hidden' }}>
         <div className="flex justify-between items-end border-b-[3px] border-black pb-2 mb-3 flex-shrink-0">
           <div className="flex items-end gap-3">
-            {/* VC logo temporarily removed pre-publication — restore <img src={vcLogo} alt="Vital City" style={{ height: '20px', width: 'auto', marginBottom: '4px' }} /> when approved */}
-            <span style={{ display: 'inline-block', height: '20px', width: '96px', marginBottom: '4px' }} aria-hidden="true" />
+            <img src={vcLogo} alt="Vital City" style={{ height: '20px', width: 'auto', marginBottom: '4px' }} />
             <span style={{ width: '1px', height: '26px', background: '#000', marginBottom: '2px' }} />
             <div className="text-[26px] font-black tracking-tight leading-none" style={{ fontFamily: 'system-ui, sans-serif' }}>NYC CompStat Decoder</div>
           </div>
@@ -707,7 +706,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
             </div>
             <p className="flex items-center gap-1.5 text-[8px] text-gray-500 mt-1.5 leading-tight flex-shrink-0" style={{ fontFamily: 'system-ui, sans-serif' }}>
               <span className="inline-block w-2 h-2 rounded-full flex-shrink-0" style={{ background: '#c0143c' }} />
-              <span>Shooting incident{shootingWindow ? ` ${fmtDate(shootingWindow.from)}–${fmtDate(shootingWindow.to)}` : ''}. Source: NYPD Open Data.</span>
+              <span>Shooting incident{shootingWindow ? ` ${fmtDate(shootingWindow.from)} to ${fmtDate(shootingWindow.to)}` : ''}. Source: NYPD Open Data.</span>
             </p>
           </div>
           <div className="flex flex-col min-h-0" style={{ fontFamily: 'system-ui, sans-serif' }}>

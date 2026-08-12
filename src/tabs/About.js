@@ -68,7 +68,7 @@ export default function About({ contextData, parsedData, fetchError }) {
         1998 and 2001 rows all match to the digit. The workbooks do not say what it represents.
       </P>
       <P>
-        Nearly every count and percent change on the dashboard comes from this report. If the live feed is
+        Nearly every count and % change on the dashboard comes from this report. If the live feed is
         unreachable, the site falls back to an embedded snapshot of a recent week and says so in the footer below.
       </P>
 
@@ -90,9 +90,9 @@ export default function About({ contextData, parsedData, fetchError }) {
         over is backfill into weeks already published.{rev ? (
           <>
             {' '}Across {ctx.n_snapshots} snapshots ({ctx.window_start} to {ctx.window_end}), citywide
-            current-year counts ran <strong>{rev.citywide_pct} percent above</strong> the sum of the weeks
+            current-year counts ran <strong>{rev.citywide_pct}% above</strong> the sum of the weeks
             reported, concentrated in {expand(rev.largest_upward)} and felony assault. Over the same span
-            the prior-year comparison figures moved <strong>{rev.prior_year_pct} percent</strong>.
+            the prior-year comparison figures moved <strong>{rev.prior_year_pct}%</strong>.
             {rev.only_downward?.length === 1 && <> {expandTitle(rev.only_downward[0])} was the only category to revise downward.</>}
           </>
         ) : ' Those figures load with the site; if the panel below is empty the measurement file could not be reached.'}
@@ -125,7 +125,7 @@ export default function About({ contextData, parsedData, fetchError }) {
       )}
       <P>
         So: treat the current year as provisional and the prior-year comparison as settled. Small declines
-        early in the year are the least reliable numbers on this site, and a change of a few percent may not
+        early in the year are the least reliable numbers on this site, and a change of a few percentage points may not
         survive revision.
       </P>
 
@@ -168,8 +168,8 @@ export default function About({ contextData, parsedData, fetchError }) {
         via <A href="https://github.com/jkeefe/census-by-precincts">John Keefe&rsquo;s census-by-precincts
         crosswalk</A>; patrol borough populations are sums of their precincts, and the citywide figure is
         8,804,190. Rates reflect residential population. The three &ldquo;tourist hub&rdquo; precincts
-        (14th, 18th, and 22nd) have daytime populations far above their residential ones, most extremely
-        the 22nd (Central Park, 129 residents), so their rates carry a hatch overlay as a warning; percent
+        (14th, 18th and 22nd) have daytime populations far above their residential ones, most extremely
+        the 22nd (Central Park, 129 residents), so their rates carry a hatch overlay as a warning; %
         changes are unaffected.
       </P>
 
@@ -179,7 +179,7 @@ export default function About({ contextData, parsedData, fetchError }) {
         come from <A href="https://council.nyc.gov/districts/">council.nyc.gov</A>. Because the NYPD reports
         by precinct, not by district, each district&rsquo;s figures are built by weighting its precincts&rsquo;
         year-to-date CompStat counts by the share of the district&rsquo;s land area falling in each precinct
-        (overlaps under 2 percent are dropped as boundary slivers). This is an approximation: it assumes
+        (overlaps under 2% are dropped as boundary slivers). This is an approximation: it assumes
         crime is spread evenly within a precinct. District figures are always year to date, since weekly
         counts are too small at that geography to be meaningful.
       </P>
