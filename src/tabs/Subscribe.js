@@ -76,7 +76,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
           </div>
         </div>
 
-        <h3 className="text-[22px] font-black font-serif leading-snug mb-1">{headline}</h3>
+        <h3 className="text-[22px] font-black leading-snug mb-1" style={{ fontFamily: 'Georgia, serif' }}>{headline}</h3>
         <p className="text-[11px] text-gray-500 mb-4">
           Council District {n}{district.member ? ` · Council Member ${district.member}` : ''} · CompStat data through {formatPeriodDate(period?.week_end) || period?.week_end || '—'}
         </p>
@@ -87,7 +87,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
           {statCell('Property', f.districtProp)}
         </div>
 
-        <div className="font-serif text-[14px] leading-relaxed text-gray-700 space-y-2 mb-5">
+        <div className="text-[14px] leading-relaxed text-gray-700 space-y-2 mb-5" style={{ fontFamily: 'Georgia, serif' }}>
           {f.upCount + f.downCount > 0 && (
             <p>
               Crime is {f.downShare >= f.upShare ? 'down' : 'up'} in{' '}
@@ -196,7 +196,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   if (signedUp) {
     return (
       <div className={`rounded-sm ${compact ? 'p-3' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
-        <div className={`${compact ? 'text-[15px]' : 'text-[18px]'} font-black font-serif text-black`}>
+        <div className={`${compact ? 'text-[15px]' : 'text-[18px]'} font-black text-black`}>
           You're set: {cadence.toLowerCase()} updates on Council District {effective.district}.
         </div>
         <p className="text-[12px] text-black/70 mt-1 mb-3">Email delivery is coming soon — here's a preview of what you'll receive.</p>
@@ -217,7 +217,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
     <form onSubmit={submit} className={`rounded-sm ${compact ? 'p-3' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
       {/* Title row: bold title + address link in parentheses */}
       <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${compact ? 'mb-1.5' : 'mb-4'}`}>
-        <h4 className={`${compact ? 'text-[13px]' : 'text-[16px] sm:text-[19px]'} font-black font-serif text-black leading-tight`}>
+        <h4 className={`${compact ? 'text-[13px]' : 'text-[16px] sm:text-[19px]'} font-black text-black leading-tight`}>
           Subscribe for updates on crime trends in Council District {effective.district}
         </h4>
         {!addressMode && (

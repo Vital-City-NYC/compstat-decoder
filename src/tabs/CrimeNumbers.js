@@ -145,7 +145,7 @@ export default function CrimeNumbers({ parsedData, activeTab, activeGeo, isTouri
         </table>
       </div>
 
-      <div className="mt-5 text-[11px] font-serif italic text-gray-500 border-t border-gray-100 pt-3">
+      <div className="mt-5 text-[11px] italic text-gray-500 border-t border-gray-100 pt-3">
         * Base sample under 30 (statistically volatile).
         <span className="mx-1.5 not-italic text-gray-300" aria-hidden>·</span>
         {activeTab === 'r52' && rollingMeta && (

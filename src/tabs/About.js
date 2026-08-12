@@ -11,7 +11,7 @@ const H = ({ children }) => (
   <h3 className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-3 mt-10 first:mt-0">{children}</h3>
 );
 const P = ({ children }) => (
-  <p className="font-serif text-[15px] leading-relaxed text-gray-700 mb-3">{children}</p>
+  <p className="text-[15px] leading-relaxed text-gray-700 mb-3">{children}</p>
 );
 const A = ({ href, children }) => (
   <a href={href} className="underline hover:text-black" target="_blank" rel="noopener noreferrer">{children}</a>
@@ -98,7 +98,7 @@ export default function About({ contextData, parsedData, fetchError }) {
       </P>
       {rev && (
         <div className="overflow-x-auto mb-4">
-          <table className="text-[13px] font-serif text-gray-700 w-full max-w-lg">
+          <table className="text-[13px] text-gray-700 w-full max-w-lg">
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b border-gray-200">
                 <th className="text-left py-1.5">Offense</th>

@@ -511,7 +511,7 @@ export default function App() {
 
         {/* Active tab content */}
         {rollingPending ? (
-          <div className="py-24 text-center font-serif text-[15px] text-gray-400">Loading the 52-week window&hellip;</div>
+          <div className="py-24 text-center text-[15px] text-gray-400">Loading the 52-week window&hellip;</div>
         ) : (<>
         {mainTab === 'headlines' && (
           <Headlines

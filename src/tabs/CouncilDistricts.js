@@ -650,12 +650,12 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
           </div>
 
           {activeTab === 'wtd' && (
-            <p className="mt-3 text-[11px] font-serif italic text-gray-500 leading-snug">
+            <p className="mt-3 text-[11px] italic text-gray-500 leading-snug">
               Council-district figures are year-to-date or rolling 52-week — weekly counts are too small at this geography to read reliably.
             </p>
           )}
           {activeTab === 'r52' && (
-            <p className="mt-3 text-[11px] font-serif italic text-gray-500 leading-snug">
+            <p className="mt-3 text-[11px] italic text-gray-500 leading-snug">
               The last 52 weeks compared with the 52 weeks before them. Recent weeks are still being revised upward, so the latest window is slightly understated.
             </p>
           )}
@@ -664,7 +664,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
 
       {/* Shootings coverage note (below the grid, so toggling never resizes the map) */}
       {showShootings && shootingWindow && (
-        <p className="mt-4 text-[11px] font-serif italic text-gray-500 leading-snug max-w-3xl">
+        <p className="mt-4 text-[11px] italic text-gray-500 leading-snug max-w-3xl">
           {shootingWindow.total} shooting incidents were reported citywide {fmtDate(shootingWindow.from)} to {fmtDate(shootingWindow.to)}, {shootingWindow.located} of them ({Math.round((shootingWindow.located / shootingWindow.total) * 100)}%) with a precise mapped location — the rest lacked coordinates. Dots show the {shootingWindow.located} mapped incidents; click one for details. Source: NYPD Open Data, refreshed quarterly, so the most recent weeks aren't shown yet.
         </p>
       )}

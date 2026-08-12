@@ -34,7 +34,7 @@ export default function HistoricView({ onBack }) {
           <div className="lg:col-span-1 space-y-4">
              <div className="text-[#ff7c53] text-[10px] font-black uppercase tracking-widest">Macro Volume</div>
              <h2 className="text-2xl font-black leading-snug">The Great Decline & The Modern Rebound</h2>
-             <p className="text-gray-600 font-serif text-[15px] leading-relaxed">From 1993 to 2019, major index crime collapsed. But the decline wasn't uniform. Violent crime leveled off around 2010, while property crime continued to fall. A post-2019 surge pushed violent crime upward through 2024, but murder has fallen every year since its 2021 spike and the broader violent index has begun declining.</p>
+             <p className="text-gray-600 text-[15px] leading-relaxed">From 1993 to 2019, major index crime collapsed. But the decline wasn't uniform. Violent crime leveled off around 2010, while property crime continued to fall. A post-2019 surge pushed violent crime upward through 2024, but murder has fallen every year since its 2021 spike and the broader violent index has begun declining.</p>
           </div>
           <div className="lg:col-span-2 h-[350px]">
              <ResponsiveContainer width="100%" height="100%">
@@ -67,7 +67,7 @@ export default function HistoricView({ onBack }) {
           <div className="lg:col-span-1 space-y-4 order-1 lg:order-2">
              <div className="text-[#e7466d] text-[10px] font-black uppercase tracking-widest">Composition</div>
              <h2 className="text-2xl font-black leading-snug">The DNA of Crime Has Mutated</h2>
-             <p className="text-gray-600 font-serif text-[15px] leading-relaxed">In 1993, Burglary and Auto Theft made up half of all major crime. Today, they account for barely a fifth. Meanwhile, Grand Larceny and Felony Assault have consumed the chart, now making up 64% of the entire index.</p>
+             <p className="text-gray-600 text-[15px] leading-relaxed">In 1993, Burglary and Auto Theft made up half of all major crime. Today, they account for barely a fifth. Meanwhile, Grand Larceny and Felony Assault have consumed the chart, now making up 64% of the entire index.</p>
              <div className="flex flex-wrap gap-x-3 gap-y-2 mt-4">
                {K7.map(c=><div key={c} className="flex items-center gap-1.5 text-[10px] text-gray-500 uppercase tracking-wider"><div className="w-2 h-2 rounded-sm" style={{background:CC[c]}}/>{CL[c]}</div>)}
              </div>
@@ -79,7 +79,7 @@ export default function HistoricView({ onBack }) {
            <div className="max-w-3xl">
              <div className="text-[#394882] text-[10px] font-black uppercase tracking-widest">Divergence</div>
              <h2 className="text-2xl font-black leading-snug mb-3">Seven Crimes, Seven Trajectories</h2>
-             <p className="text-gray-600 font-serif text-[15px] leading-relaxed">If we index all crimes to their 1993 levels (where 1993 = 100), the divergence is stark. Property crimes like auto theft collapsed by nearly 90%. Murder fell 84%. But felony assault dropped only 27% at its lowest point and has since climbed back to become the statistical outlier, plateauing near its pre-decline levels.</p>
+             <p className="text-gray-600 text-[15px] leading-relaxed">If we index all crimes to their 1993 levels (where 1993 = 100), the divergence is stark. Property crimes like auto theft collapsed by nearly 90%. Murder fell 84%. But felony assault dropped only 27% at its lowest point and has since climbed back to become the statistical outlier, plateauing near its pre-decline levels.</p>
            </div>
            <div className="h-[450px] w-full pt-4">
               <ResponsiveContainer width="100%" height="100%">
@@ -100,8 +100,8 @@ export default function HistoricView({ onBack }) {
           <div className="space-y-4">
              <div className="text-[#050507] text-[10px] font-black uppercase tracking-widest">Classification Shift</div>
              <h2 className="text-2xl font-black leading-snug">The Assault Anomaly</h2>
-             <p className="text-gray-600 font-serif text-[15px] leading-relaxed mb-4">While felony assault dominates headlines, misdemeanor assault outnumbers it 1.6 to 1. In 2015, misdemeanor assaults dropped 21% overnight while felonies didn't budge—a clear indicator of classification changes rather than behavioral shifts.</p>
-             <p className="text-gray-600 font-serif text-[15px] leading-relaxed">From 2020 to 2024, both categories rose in lockstep for the first time in the dataset, suggesting a genuine increase in violent contact rather than just administrative drift. That parallel rise has since leveled off, with misdemeanor assaults declining in 2025.</p>
+             <p className="text-gray-600 text-[15px] leading-relaxed mb-4">While felony assault dominates headlines, misdemeanor assault outnumbers it 1.6 to 1. In 2015, misdemeanor assaults dropped 21% overnight while felonies didn't budge—a clear indicator of classification changes rather than behavioral shifts.</p>
+             <p className="text-gray-600 text-[15px] leading-relaxed">From 2020 to 2024, both categories rose in lockstep for the first time in the dataset, suggesting a genuine increase in violent contact rather than just administrative drift. That parallel rise has since leveled off, with misdemeanor assaults declining in 2025.</p>
           </div>
           <div className="h-[350px]">
              <ResponsiveContainer width="100%" height="100%">
@@ -124,7 +124,7 @@ export default function HistoricView({ onBack }) {
              <div className="max-w-2xl space-y-4">
                <div className="text-[#9b9fbc] text-[10px] font-black uppercase tracking-widest">Geographic Reality</div>
                <h2 className="text-2xl font-black leading-snug">The Complex Geography of Crime</h2>
-               <p className="text-gray-600 font-serif text-[15px] leading-relaxed">Mapping the 76 standard precincts reveals distinct statistical clusters. In this specific dataset, poverty rates correlate strongly with violence (shootings, murder, felony assault). Conversely, theft (grand and petit larceny) shows virtually zero correlation with poverty, mapping closer to commercial density and foot traffic.</p>
+               <p className="text-gray-600 text-[15px] leading-relaxed">Mapping the 76 standard precincts reveals distinct statistical clusters. In this specific dataset, poverty rates correlate strongly with violence (shootings, murder, felony assault). Conversely, theft (grand and petit larceny) shows virtually zero correlation with poverty, mapping closer to commercial density and foot traffic.</p>
              </div>
 
              {/* Controls */}
