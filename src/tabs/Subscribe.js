@@ -147,7 +147,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
 /* ------------------------------------------------------------------ */
 /* The signup band itself                                              */
 /* ------------------------------------------------------------------ */
-export default function SubscribeBand({ district, districts, f, rows, period }) {
+export default function SubscribeBand({ district, districts, f, rows, period, compact = false }) {
   const [email, setEmail] = useState('');
   const [cadence, setCadence] = useState('Quarterly');
   const [chosenDistrict, setChosenDistrict] = useState(null); // null = follow the district being viewed
@@ -195,8 +195,8 @@ export default function SubscribeBand({ district, districts, f, rows, period }) 
 
   if (signedUp) {
     return (
-      <div className="mt-10 rounded-sm p-6" style={{ background: VC_CITRON }}>
-        <div className="text-[18px] font-black font-serif text-black">
+      <div className={`rounded-sm ${compact ? 'p-4' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
+        <div className={`${compact ? 'text-[15px]' : 'text-[18px]'} font-black font-serif text-black`}>
           You're set: {cadence.toLowerCase()} updates on Council District {effective.district}.
         </div>
         <p className="text-[12px] text-black/70 mt-1 mb-3">Email delivery is coming soon — here's a preview of what you'll receive.</p>
@@ -214,10 +214,10 @@ export default function SubscribeBand({ district, districts, f, rows, period }) 
   }
 
   return (
-    <form onSubmit={submit} className="mt-10 rounded-sm p-6" style={{ background: VC_CITRON }}>
+    <form onSubmit={submit} className={`rounded-sm ${compact ? 'p-4' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
       {/* Title row: bold title + address link in parentheses */}
-      <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 mb-4">
-        <h4 className="text-[16px] sm:text-[19px] font-black font-serif text-black leading-tight">
+      <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-1 ${compact ? 'mb-2.5' : 'mb-4'}`}>
+        <h4 className={`${compact ? 'text-[14px]' : 'text-[16px] sm:text-[19px]'} font-black font-serif text-black leading-tight`}>
           Subscribe for updates on crime trends in Council District {effective.district}
         </h4>
         {!addressMode && (
