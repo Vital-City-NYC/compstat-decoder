@@ -1,0 +1,60 @@
+name: Send district emails
+
+# Tuesday after the first Monday: the send half of the email cycle. Pre-flight went
+# out the day before; this proceeds unless an open issue titled HOLD exists.
+# Manual dispatch runs any time (used for beta cycles).
+
+on:
+  schedule:
+    - cron: '0 16 * * 2'   # Tuesdays noon ET; the job gates itself to the day after the first Monday
+  workflow_dispatch:
+    inputs:
+      cadence:
+        description: 'monthly or quarterly'
+        default: 'monthly'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Only the Tuesday after the first Monday (scheduled runs)
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date -u +%d)" -lt 2 ] || [ "$(date -u +%d)" -gt 8 ]; then
+            echo "Not the cycle Tuesday — nothing to do."
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: env.SKIP != '1'
+        with:
+          python-version: '3.11'
+
+      - name: Send the monthly cycle
+        if: env.SKIP != '1'
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: python3 scripts/send_cycle.py --cadence ${{ inputs.cadence || 'monthly' }}
+
+      - name: Also the quarterly cycle, in quarter months
+        if: env.SKIP != '1' && github.event_name == 'schedule'
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: |
+          M=$(date -u +%m)
+          case "$M" in 01|04|07|10) python3 scripts/send_cycle.py --cadence quarterly ;; *) echo "not a quarter month" ;; esac
+
+      - name: File an alarm issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create -R "$GITHUB_REPOSITORY" \
+            --title "ALARM: district email send failed $(date -u +%Y-%m-%d)" \
+            --body "@tedalcorn The send job failed — subscribers may have received some, all, or none of this cycle. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
