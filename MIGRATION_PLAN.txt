@@ -48,7 +48,7 @@ B1. [Ted -> Eva] The setup conversation. What to ask her for:
       - An API key (Mailchimp: Account > Extras > API keys). It gets stored as an
         encrypted GitHub secret; it's what lets the site register signups and lets the
         send job create campaigns.
-      - Confirmation that hello@vitalcitynyc.org (or whatever sender Josh picks) is a
+      - Confirmation that info@vitalcitynyc.org (settled: same as the newsletter) is a
         verified sending address on their domain authentication.
 B2. [Claude/Ted] Replace the site's mock signup with a real one that writes to
     Mailchimp with district + cadence + tags. (Simplest version needs no server at

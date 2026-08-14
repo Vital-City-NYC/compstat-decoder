@@ -35,4 +35,4 @@ WHAT WE NEED FROM MAILCHIMP'S SIDE
 - Which audience these contacts should live in, with the DISTRICT / CADENCE /
   VC_NEWSLETTER fields created on it.
 - An API key (stored encrypted on GitHub; it's what steps 1 and 3 use).
-- Confirmation of the sending address (the template assumes hello@vitalcitynyc.org).
+- Sending address confirmed: info@vitalcitynyc.org, same as the newsletter.

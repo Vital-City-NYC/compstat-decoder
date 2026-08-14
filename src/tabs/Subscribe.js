@@ -62,7 +62,7 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
     <div className="mt-4 border border-gray-300 rounded-sm shadow-sm overflow-hidden max-w-xl bg-white">
       {/* Email-client chrome */}
       <div className="bg-gray-100 border-b border-gray-300 px-4 py-2.5 text-[11px] text-gray-600 space-y-0.5">
-        <div><span className="font-bold text-gray-500">From:</span> Vital City &lt;hello@vitalcitynyc.org&gt;</div>
+        <div><span className="font-bold text-gray-500">From:</span> Vital City &lt;info@vitalcitynyc.org&gt;</div>
         <div><span className="font-bold text-gray-500">To:</span> {email}</div>
         <div className="text-[12px] text-black font-bold">{subject}</div>
       </div>
