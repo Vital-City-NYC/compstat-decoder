@@ -769,13 +769,16 @@ export const ContextSparkline = ({ series, annualized, preLow, preHigh, width = 
   const max = Math.max(...allVals);
   const range = max - min || 1;
   const pad = 2;
-  const xFor = (i, n) => pad + (i / Math.max(1, n - 1)) * (width - pad * 2);
+  // The projection dot gets reserved space AFTER the history, so the connector always
+  // points forward. (It used to clamp the dot left of the last point on wide sparklines,
+  // drawing the connector backward over the trend line — read as a phantom cliff.)
+  const dotSpace = 10;
+  const xFor = (i, n) => pad + (i / Math.max(1, n - 1)) * (width - pad * 2 - dotSpace);
   const yFor = (v) => pad + (1 - (v - min) / range) * (height - pad * 2);
 
   // History points (excludes current year — current is rendered separately as the "annualized" dot)
   const histPoints = series.map((d, i) => `${xFor(i, series.length).toFixed(1)},${yFor(d.val).toFixed(1)}`).join(' ');
-  // Current-year dot sits just right of the last historical point, clamped so the halo never clips the edge.
-  const cx = Math.min(width - 5, xFor(series.length - 1, series.length) + (width - pad * 2) * 0.06);
+  const cx = width - 5;
   const cy = yFor(annualized);
   const trending = annualized > series[series.length - 1].val;
 
