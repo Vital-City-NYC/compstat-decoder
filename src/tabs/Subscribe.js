@@ -44,10 +44,11 @@ const CADENCES = ['Quarterly', 'Monthly', 'Weekly'];
 const MC_HOST = 'https://vitalcitynyc.us5.list-manage.com';
 const MC_U = '2feddb33cbe9c2118e75fdc1c';
 const MC_ID = 'bf42451be9';
+const MC_F_ID = '0005beedf0'; // the embedded form's id — new-generation lists 404 without it
 const mcSubscribe = ({ email, district, cadence, vcNews }) => new Promise((resolve, reject) => {
   const cb = 'mcJsonp' + Math.random().toString(36).slice(2);
   const params = new URLSearchParams({
-    u: MC_U, id: MC_ID, EMAIL: email, CADENCE: cadence.toLowerCase(),
+    u: MC_U, id: MC_ID, f_id: MC_F_ID, EMAIL: email, CADENCE: cadence.toLowerCase(),
     VC_NEWS: vcNews ? 'yes' : 'no', c: cb,
   });
   if (district != null) params.set('DISTRICT', String(district));
