@@ -36,7 +36,7 @@ const pointInGeometry = (pt, geom) => {
 };
 const districtForPoint = (pt, districts) => districts.find(d => pointInGeometry(pt, d.geometry)) || null;
 
-const CADENCES = ['Quarterly', 'Monthly', 'Weekly'];
+const CADENCES = ['Quarterly', 'Monthly']; // the product ships these two; Mailchimp's CADENCE field enforces it
 
 /* Mailchimp signup via the audience's public form endpoint — the same IDs every
    embedded Mailchimp form exposes, so nothing secret ships to the browser. post-json

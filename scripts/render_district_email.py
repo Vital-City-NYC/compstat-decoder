@@ -236,6 +236,39 @@ def render_district(d, data, hoods, template, cadence, computed=None):
     else:
         foot = ""
 
+    # Straightforward intro for the rates table, in the house data-sentence style.
+    comparable = []
+    for r in rows_data:
+        pop = pops.get(r["key"])
+        if r["key"] in TOURIST or not pop:
+            continue
+        rate = r["all"]["cur"] / pop * 100000
+        boro = boro_of.get(int(re.match(r"([0-9]+)", r["key"]).group(1)))
+        br = boro_rate(boro) if boro else None
+        comparable.append({"below_city": rate < city_rate, "below_boro": (br is not None and rate < br), "boro": boro})
+    ncmp = len(comparable)
+    below_city = sum(1 for c in comparable if c["below_city"])
+    below_boro = sum(1 for c in comparable if c["below_boro"])
+    boro_groups = {BORO_GROUP.get(c["boro"]) for c in comparable if c["boro"]}
+    boro_word = boro_groups.pop() if len(boro_groups) == 1 else "their borough"
+    numw = lambda k: NUM_WORD.get(k, str(k))
+    if ncmp == 0:
+        rates_intro = ("No comparable per-resident rate exists for this district&rsquo;s precincts. "
+                       f"Citywide, major crime is running at {city_rate:,.0f} incidents per 100,000 residents this year.")
+    else:
+        prec_word = f"the district&rsquo;s {numw(ncmp)} precinct{'s' if ncmp != 1 else ''}" if ncmp == len(rows_data)             else f"the {numw(ncmp)} precinct{'s' if ncmp != 1 else ''} with comparable rates"
+        def phrase(k):
+            return "all" if k == ncmp and ncmp > 1 else ("none" if k == 0 else numw(k))
+        if below_city == ncmp and below_boro == ncmp:
+            finding = f"Of {prec_word}, all have less crime per resident than {boro_word} and the city as a whole."
+        elif below_city == 0 and below_boro == 0:
+            finding = f"Of {prec_word}, all have more crime per resident than {boro_word} and the city as a whole."
+        else:
+            finding = (f"Of {prec_word}, {phrase(below_boro)} ha{'s' if below_boro == 1 else 've'} less crime per "
+                       f"resident than {boro_word}, and {phrase(below_city)} less than the city as a whole.")
+        rates_intro = (f"{finding} The rates below are total major crimes so far this year per 100,000 residents "
+                       f"&mdash; citywide, that figure is {city_rate:,.0f}.")
+
     member = f" &middot; Council Member {d['member']}" if d.get("member") else ""
     link = f"{SITE}?tab=council&district={n}"
     out = template
@@ -257,7 +290,7 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         "{{CITYWIDE_VIOLENT}}": pct_cell(cw["violent"]),
         "{{CITYWIDE_PROPERTY}}": pct_cell(cw["property"]),
         "{{LINK}}": link,
-        "{{CITY_RATE}}": f"{city_rate:,.0f}",
+        "{{RATES_INTRO}}": rates_intro,
         "{{RATE_ROWS}}": "\n".join(rate_rows),
         "{{RATE_FOOTNOTE}}": foot,
         "{{WEEK_END}}": through,
