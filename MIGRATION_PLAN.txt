@@ -1,0 +1,75 @@
+COMPSTAT DECODER — MIGRATION AND EMAIL PLAN
+=============================================
+
+THE EMAIL CONCEPT (the explanation for Josh/Eva)
+------------------------------------------------
+People who visit the Decoder can sign up for monthly or quarterly email updates on
+their City Council district. That's its own small list, separate from the main Vital
+City newsletter. But we want the door open to subscribing these people to Vital City
+content too — either with an opt-in checkbox at signup, or by campaign to them later.
+The Mailchimp setup just needs to allow that from day one: one audience, with tags
+that keep the Decoder list distinct.
+
+
+PHASE A — MOVE THE APP (Ted + Josh, roughly a day)
+---------------------------------------------------
+A1. [Claude/Ted] Merge the vc-reskin branch into main so the org receives one
+    canonical branch.
+A2. [Josh] Create Vital-City-NYC/compstat-decoder as a PUBLIC repo; add tedalcorn as
+    a collaborator with admin on that repo. (Public repo = unlimited free
+    collaborators, no third seat.)
+A3. [Ted, on the call or after] Check the org's Actions settings: Actions enabled,
+    workflow permissions set to "read and write." If it's locked org-wide, an org
+    owner (Josh) flips it.
+A4. [Claude/Ted] Push the code; update the three self-references (data-fetch
+    owner/repo in shared.js, package.json homepage, About/meta URLs); enable GitHub
+    Pages; run the scraper Action once manually and confirm it commits.
+A5. [Claude/Ted] Build the ?embed=1 mode — the app strips its outer chrome and sizes
+    itself for an iframe.
+A6. [Josh, or whoever built the quarterly-crime-explorer page] Create the Ghost page
+    at vitalcitynyc.org/compstat-decoder that frames the app, same wrapper pattern as
+    quarterly-crime-explorer.
+A7. [Josh] Retire the Ledger; redirect its Vercel URL to the new page.
+    [Ted] Take down tedalcorn.org/compstat-decoder (no redirect, per plan).
+
+
+PHASE B — EMAIL (this is where Eva comes in)
+---------------------------------------------
+B1. [Ted -> Eva] The setup conversation. What to ask her for:
+      - A tour of what's in Mailchimp today: which audiences exist, what they're used
+        for, and how the plan is billed (Mailchimp charges by contact count, so she
+        should know we're adding a list that could grow).
+      - Her agreement on structure: ONE audience (Mailchimp's own best practice), with
+        Decoder signups tagged rather than walled off in a separate audience. Fields:
+        DISTRICT (1-51) and CADENCE (monthly/quarterly), plus a tag like
+        "compstat-decoder." And an opt-in group for "Vital City newsletter" so
+        cross-subscription is possible at signup or later. A separate audience is
+        workable if she prefers it, but it doubles contacts if we ever cross-subscribe.
+      - An API key (Mailchimp: Account > Extras > API keys). It gets stored as an
+        encrypted GitHub secret; it's what lets the site register signups and lets the
+        send job create campaigns.
+      - Confirmation that hello@vitalcitynyc.org (or whatever sender Josh picks) is a
+        verified sending address on their domain authentication.
+B2. [Claude/Ted] Replace the site's mock signup with a real one that writes to
+    Mailchimp with district + cadence + tags. (Simplest version needs no server at
+    all — Mailchimp accepts form posts from static sites; if we want a smoother
+    inline experience, a tiny free Cloudflare/Vercel function in front.)
+B3. [Claude/Ted] The send job: a scheduled GitHub Action that, each cycle, renders
+    every district's email from the live data using the approved July template, and
+    creates the campaigns in Mailchimp segmented by district tag.
+      - Josh's choice, from the call: campaigns SEND automatically, or are created as
+        DRAFTS in Mailchimp for a human to approve and send each cycle. (Recommend
+        starting with drafts — costs one click a month and builds trust in the
+        renderer.)
+B4. [Ted] Test cycle: seed the audience with our own emails across a few districts
+    and both cadences; run a full render-and-send to just us; check numbers against
+    the site, links, unsubscribe, and how it looks in Gmail/Outlook.
+B5. [Claude/Ted] Flip the site's signup live. Retire the "email delivery is coming
+    soon" language.
+
+
+WHAT EVA'S INVOLVEMENT AMOUNTS TO
+----------------------------------
+One conversation (B1) plus two deliverables: the audience/tag setup and an API key.
+After that she's consulted, not tasked — unless she'd rather own the per-cycle
+approval step, which is a reasonable home for it.

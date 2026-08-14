@@ -160,7 +160,7 @@ export default function App() {
   // scripts/build_context.py from the snapshot archive. Fetched live rather than bundled
   // so the figures the site quotes about its own reliability can't go stale between builds.
   useEffect(() => {
-    fetch(`https://raw.githubusercontent.com/tedalcorn/${REPO_SELF}/main/data/context.json?t=${Date.now()}`)
+    fetch(`https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_SELF}/main/data/context.json?t=${Date.now()}`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error('no context')))
       .then(setContextData)
       .catch(() => setContextData(null));

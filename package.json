@@ -49,5 +49,5 @@
       "node_modules/(?!(d3-geo|d3-array|internmap)/)"
     ]
   },
-  "homepage": "https://tedalcorn.org/compstat-decoder"
+  "homepage": "https://vital-city-nyc.github.io/compstat-decoder"
 }

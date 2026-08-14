@@ -131,7 +131,7 @@ export const CL = {BU:'Burglary',FA:'Fel. Assault',GA:'Grand Larceny Auto',GL:'G
 // scripts/scrape_compstat.py), data/context.json (revision + volatility figures from
 // scripts/build_context.py) and data/weekly_series/master.json.
 export const REPO_SELF = "compstat-decoder";
-export const GITHUB_USER = "tedalcorn";
+export const GITHUB_USER = "Vital-City-NYC";
 export const REPO_NAME = REPO_SELF;
 export const CITYWIDE_POPULATION = 8804190; // 2020 Census
 export const VOLATILITY_THRESHOLD = 30;
@@ -454,7 +454,7 @@ export const volatilitySentence = (v, noun = 'precinct') => {
 /* published at the time — so past weeks arrive already revised.        */
 /* ------------------------------------------------------------------ */
 export const ROLLING_URL =
-  `https://raw.githubusercontent.com/tedalcorn/${REPO_SELF}/main/data/rolling.json`;
+  `https://raw.githubusercontent.com/${GITHUB_USER}/${REPO_SELF}/main/data/rolling.json`;
 
 /* ------------------------------------------------------------------ */
 /* STALE GEOGRAPHY GUARD                                               */

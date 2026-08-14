@@ -1,0 +1,31 @@
+FOR THE CALL WITH JOSH — PARED DOWN
+====================================
+(Settled already: GitHub Pages for hosting. Mailchimp is the ESP, Anthony + Eva hold
+credentials. URL follows the data-page hierarchy: vitalcitynyc.org/compstat-decoder.
+Anthony holds DNS — no longer needed, since a path instead of a subdomain means no
+DNS change at all.)
+
+1. ACCESS — no new seat needed. The repo will be public (it has to be for free GitHub
+   Pages), and public repos can have unlimited outside collaborators at no cost. So:
+   create Vital-City-NYC/compstat-decoder as a public repo and add tedalcorn as a
+   collaborator with admin on that one repo. No seat, no money. (One small thing an
+   org owner may need to do once: if GitHub Actions are disabled org-wide, flip the
+   setting that lets this repo's workflows run and write to the repo — I can tell you
+   exactly where it is on the call.)
+
+2. THE URL — vitalcitynyc.org/compstat-decoder works, with one mechanic to confirm:
+   Ghost can't host the app itself, so that page would embed it (the app lives on
+   GitHub Pages, the Ghost page frames it) — presumably how quarterly-crime-explorer
+   works too. Who built that page, and can they set up the same wrapper? I'll add an
+   embed mode to the app so it sits cleanly inside.
+
+3. THE LEDGER — confirm it gets retired and its Vercel URL redirected once this is
+   live, so there aren't two CompStat products.
+
+4. MAILCHIMP — what I'm going to do, for your sign-off: signups on the site go
+   straight into a Mailchimp audience with the person's district and cadence attached;
+   once a month (or whatever cadence we land on) an automated job renders each
+   district's email from the live data and sends it through Mailchimp. Unsubscribe and
+   preferences are Mailchimp's built-in ones. I'll need an API key from Anthony or Eva
+   when we get there. Two decisions for you: does each send go out automatically, or
+   do you want to approve each cycle? And does it send from hello@vitalcitynyc.org?
