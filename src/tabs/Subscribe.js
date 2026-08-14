@@ -157,6 +157,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [lookupState, setLookupState] = useState('idle'); // idle | searching | done | error
   const [signedUp, setSignedUp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [skippedDistrict, setSkippedDistrict] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const debounce = useRef(null);
 
@@ -187,19 +188,79 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
 
   const submit = (e) => {
     e.preventDefault();
-    if (!emailOk || !effective) return;
+    if (!emailOk || (!standalone && !effective)) return;
     try {
-      localStorage.setItem('cd_subscribe_mock', JSON.stringify({ email, cadence, district: effective.district }));
+      localStorage.setItem('cd_subscribe_mock', JSON.stringify({ email, cadence, district: effective ? effective.district : null }));
     } catch {}
     setSignedUp(true);
+  };
+
+  // One combobox: type an address OR a district number / member name, or open it and
+  // scroll the district list. Shown on the standalone band's post-signup step.
+  const districtPicker = () => {
+        const q = address.trim().toLowerCase();
+        const num = parseInt(q.replace(/^district\s*/, ''), 10);
+        const matches = q
+          ? districts.filter(d => d.district === num || (d.member || '').toLowerCase().includes(q))
+          : districts;
+        const pick = (d) => {
+          setChosenDistrict(d); setAddressMode(false); setAddress(''); setPickerOpen(false);
+          try { localStorage.setItem('cd_subscribe_mock', JSON.stringify({ email, cadence, district: d.district })); } catch {}
+        };
+        return (
+          <div className="mb-4 max-w-md relative">
+            <input type="text" value={address}
+              onChange={(e) => { setAddress(e.target.value); setPickerOpen(true); }}
+              onFocus={() => setPickerOpen(true)}
+              onBlur={() => setTimeout(() => setPickerOpen(false), 150)}
+              placeholder="Enter your address, or pick your Council district"
+              className="w-full border border-gray-800 bg-white px-3 py-2 text-[13px] focus:outline-none" />
+            {pickerOpen && (
+              <div className="absolute z-20 left-0 right-0 bg-white border border-gray-800 border-t-0 max-h-52 overflow-y-auto">
+                {lookupState === 'searching' && <div className="px-3 py-2 text-[11px] text-black/60">Looking up address&hellip;</div>}
+                {suggestion && (
+                  <button type="button" onMouseDown={() => pick(suggestion.district)}
+                    className="w-full text-left px-3 py-2 text-[12px] hover:bg-black/5 border-b border-gray-200">
+                    <span className="font-black">{suggestion.label}</span> &rarr; District {suggestion.district.district}
+                    {suggestion.district.member ? ` (${suggestion.district.member})` : ''}
+                  </button>
+                )}
+                {matches.map(d => (
+                  <button key={d.district} type="button" onMouseDown={() => pick(d)}
+                    className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-black/5">
+                    <span className="font-bold">District {d.district}</span>{d.member ? ` — ${d.member}` : ''}
+                  </button>
+                ))}
+                {!suggestion && matches.length === 0 && lookupState !== 'searching' && (
+                  <div className="px-3 py-2 text-[11px] text-black/60">Keep typing your address&hellip;</div>
+                )}
+              </div>
+            )}
+          </div>
+        );
   };
 
   if (signedUp) {
     return (
       <div className={`rounded-sm ${compact ? 'p-3' : 'mt-10 p-6'}`} style={{ background: VC_CITRON }}>
         <div className={`${compact ? 'text-[15px]' : 'text-[18px]'} font-black font-serif text-black`}>
-          You're set: {cadence.toLowerCase()} updates on Council District {effective.district}.
+          {effective ? `You're set: ${cadence.toLowerCase()} updates on Council District ${effective.district}.`
+            : skippedDistrict ? `You're set: ${cadence.toLowerCase()} updates.`
+            : 'You\u2019re in \u2014 which Council district should we watch for you?'}
         </div>
+        {!effective && !skippedDistrict && (
+          <div className="mt-3">
+            {districtPicker()}
+            <button type="button" onClick={() => setSkippedDistrict(true)}
+              className="text-[12px] underline text-black/70 hover:opacity-70 -mt-2 block">
+              Skip for now
+            </button>
+          </div>
+        )}
+        {!effective && skippedDistrict && (
+          <p className="text-[12px] text-black/70 mt-1">You can pick a district any time on the By Council District page.</p>
+        )}
+        {effective && (<>
         <p className="text-[12px] text-black/70 mt-1 mb-3">Email delivery is coming soon — here's a preview of what you'll receive.</p>
         {(f && rows) ? (!showPreview ? (
           <button onClick={() => setShowPreview(true)}
@@ -215,6 +276,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             See your district&rsquo;s page
           </a>
         )}
+        </>)}
       </div>
     );
   }
@@ -265,47 +327,6 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
         </div>
       )}
 
-      {/* Standalone: one combobox — type an address OR a district number / member name,
-          or just open it and scroll the district list. */}
-      {standalone && !chosenDistrict && (() => {
-        const q = address.trim().toLowerCase();
-        const num = parseInt(q.replace(/^district\s*/, ''), 10);
-        const matches = q
-          ? districts.filter(d => d.district === num || (d.member || '').toLowerCase().includes(q))
-          : districts;
-        const pick = (d) => { setChosenDistrict(d); setAddressMode(false); setAddress(''); setPickerOpen(false); };
-        return (
-          <div className="mb-4 max-w-md relative">
-            <input type="text" value={address}
-              onChange={(e) => { setAddress(e.target.value); setPickerOpen(true); }}
-              onFocus={() => setPickerOpen(true)}
-              onBlur={() => setTimeout(() => setPickerOpen(false), 150)}
-              placeholder="Enter your address, or pick your Council district"
-              className="w-full border border-gray-800 bg-white px-3 py-2 text-[13px] focus:outline-none" />
-            {pickerOpen && (
-              <div className="absolute z-20 left-0 right-0 bg-white border border-gray-800 border-t-0 max-h-52 overflow-y-auto">
-                {lookupState === 'searching' && <div className="px-3 py-2 text-[11px] text-black/60">Looking up address&hellip;</div>}
-                {suggestion && (
-                  <button type="button" onMouseDown={() => pick(suggestion.district)}
-                    className="w-full text-left px-3 py-2 text-[12px] hover:bg-black/5 border-b border-gray-200">
-                    <span className="font-black">{suggestion.label}</span> &rarr; District {suggestion.district.district}
-                    {suggestion.district.member ? ` (${suggestion.district.member})` : ''}
-                  </button>
-                )}
-                {matches.map(d => (
-                  <button key={d.district} type="button" onMouseDown={() => pick(d)}
-                    className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-black/5">
-                    <span className="font-bold">District {d.district}</span>{d.member ? ` — ${d.member}` : ''}
-                  </button>
-                ))}
-                {!suggestion && matches.length === 0 && lookupState !== 'searching' && (
-                  <div className="px-3 py-2 text-[11px] text-black/60">Keep typing your address&hellip;</div>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })()}
 
       {/* Input row: email, cadence segmented control, sign up. On mobile each control
           fills the citron box edge-to-edge (equal left/right margins); inline on desktop. */}
@@ -321,7 +342,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             </button>
           ))}
         </div>
-        <button type="submit" disabled={!emailOk || !effective}
+        <button type="submit" disabled={!emailOk || (!standalone && !effective)}
           className={`w-full sm:w-auto font-black uppercase tracking-widest text-white bg-black disabled:opacity-40 ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-[11px]'}`}>
           Sign up
         </button>
