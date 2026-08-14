@@ -7,16 +7,29 @@ name: Update CompStat data
 on:
   schedule:
     - cron: '0 16 * * 1'   # Mondays 12pm ET / 11am EST, after the NYPD posts
+    - cron: '0 16 * * 2'   # Tuesday retry — heals a late NYPD posting on its own
   workflow_dispatch:
+    inputs:
+      test_alarm:
+        description: 'Type yes to force a failure and test the alarm path'
+        required: false
+        default: ''
 
 permissions:
   contents: write
+  issues: write
 
 jobs:
   update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Forced failure (alarm test only)
+        if: inputs.test_alarm == 'yes'
+        run: |
+          echo "Deliberate failure to test the alarm path."
+          exit 1
 
       - uses: actions/setup-python@v5
         with:
@@ -27,6 +40,9 @@ jobs:
 
       - name: Scrape the weekly CompStat workbooks
         run: python3 scripts/scrape_compstat.py
+
+      - name: Fail if the feed is stale (NYPD posted nothing new)
+        run: python3 scripts/check_freshness.py
 
       - name: Extend the weekly series and rebuild the 52-week rollup
         run: python3 scripts/archive_weekly_series.py
@@ -52,3 +68,16 @@ jobs:
             git commit -m "Weekly CompStat update ($(date -u +%Y-%m-%d))"
             git push
           fi
+
+      - name: File an alarm issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create -R "$GITHUB_REPOSITORY" \
+            --title "ALARM: CompStat update failed $(date -u +%Y-%m-%d)" \
+            --body "@tedalcorn The scheduled CompStat update failed. Until this is fixed the site serves last week's data (its own stale notices will appear after ~8 days).
+
+          Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+
+          Common causes: the NYPD posted late (the Tuesday retry usually heals this on its own — check tomorrow before acting); a retired workbook URL after a command reorganization (fix the file list in scripts/scrape_compstat.py); a changed workbook layout (read the run log)." || true
