@@ -89,7 +89,11 @@ def main():
     by_district = {}
     for s in cycle_subs:
         by_district.setdefault(s["DISTRICT"], []).append(s)
-    skipped = sorted(set(s["DISTRICT"] for s in subs) - set(by_district) - {None})
+    other = {}
+    for s in subs:
+        if s["CADENCE"].lower() != args.cadence and s["DISTRICT"] not in by_district:
+            other[s["DISTRICT"]] = other.get(s["DISTRICT"], 0) + 1
+    skipped = [f"{n} ({c} subscriber{'s' if c != 1 else ''})" for n, c in sorted(other.items())]
 
     # ---- render + vet each district that has subscribers this cycle ----
     flags = []
@@ -136,7 +140,7 @@ def main():
 <div style="background:#000;color:#fff;padding:22px 28px;">
   <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#dde34c;">CompStat Decoder &middot; pre-flight</div>
   <div style="font-size:21px;font-weight:800;padding-top:6px;">Tomorrow the {args.cadence} update goes out to {total_subs} subscriber{'s' if total_subs != 1 else ''} in {len(rendered)} district{'s' if len(rendered) != 1 else ''}</div>
-  <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today} &middot; NYPD data through {week_end} ({age} days old) &middot; To stop tomorrow's send, open an issue titled HOLD on the repo.</div>
+  <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today} &middot; NYPD data through {week_end} ({age} days old) &middot; Nothing to do if this looks right &mdash; it sends tomorrow on its own. To STOP it: <a href="https://github.com/Vital-City-NYC/compstat-decoder/issues/new?title=HOLD" style="color:#dde34c;">click here</a> and press the green &ldquo;Submit new issue&rdquo; button on the page that opens &mdash; that posts a stop signal the sender checks first. (Or just tell Ted.)</div>
 </div>
 <div style="padding:20px 28px;">
   <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding-bottom:6px;">Checks</div>
@@ -148,7 +152,7 @@ def main():
         <th align="left" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Email</th></tr>
     {rows_html}
   </table>
-  {f'<p style="font-size:12px;color:#6b7280;">Not in this cycle (subscribers on the other cadence): districts {", ".join(str(x) for x in skipped)}.</p>' if skipped else ''}
+  {f'<p style="font-size:12px;color:#6b7280;">Waiting for the {"quarterly" if args.cadence == "monthly" else "monthly"} cycle instead: district {", ".join(skipped)}.</p>' if skipped else ''}
 </div></div></body>"""
     dst = outdir / "preflight_digest.html"
     dst.write_text(digest)
