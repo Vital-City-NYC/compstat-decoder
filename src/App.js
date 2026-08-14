@@ -8,6 +8,7 @@ import {
   ROLLING_URL,
 } from './shared';
 import vcLogo from './vitalcity-logo.png';
+import NEIGHBORHOODS from './data/neighborhoods.json';
 import HistoricView from './HistoricView';
 import Headlines from './tabs/Headlines';
 import CrimeNumbers from './tabs/CrimeNumbers';
@@ -230,10 +231,33 @@ export default function App() {
 
   const geoSearchResults = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    const matchedBoroughs = boroughs.filter(b => !q || b.toLowerCase().includes(q));
+    // Collapse case, hyphens and punctuation so "bedford stuyvesant", "Bed-Stuy" and
+    // "bedstuy" all match the same entries.
+    const norm = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const nq = norm(q);
+    const matchedBoroughs = boroughs.filter(b => !q || norm(b).includes(nq));
     const matchedPrecincts = Object.entries(PRECINCT_NEIGHBORHOODS)
-      .filter(([pct, hoods]) => !q || pct.toLowerCase().includes(q) || hoods.toLowerCase().includes(q))
+      .filter(([pct, hoods]) => !q || pct.toLowerCase().includes(q) || norm(hoods).includes(nq))
       .map(([pct, hoods]) => ({ pct, hoods }));
+    // NTA crosswalk: search the official 2020 neighborhood names too, and surface each
+    // precinct the neighborhood overlaps (share of the neighborhood's area, largest first).
+    if (nq.length >= 2) {
+      // Several matching neighborhoods can point at the same precinct (Bed-Stuy East and
+      // West both touch the 79th) — keep whichever gives the precinct its largest share.
+      const best = {};
+      NEIGHBORHOODS.filter(n => norm(n.name).includes(nq)).forEach(n => {
+        n.precincts.forEach(({ p, share }) => {
+          if (!best[p] || share > best[p].share) best[p] = { name: n.name, share };
+        });
+      });
+      const already = new Set(matchedPrecincts.map(r => r.pct));
+      Object.entries(best)
+        .sort((a, b) => b[1].share - a[1].share)
+        .forEach(([p, via]) => {
+          if (already.has(p)) return;
+          matchedPrecincts.push({ pct: p, hoods: PRECINCT_NEIGHBORHOODS[p] || '', via });
+        });
+    }
     return { boroughs: matchedBoroughs, precincts: matchedPrecincts, showCitywide: !q || 'citywide'.includes(q) };
   }, [searchQuery, boroughs]);
 
@@ -499,7 +523,9 @@ export default function App() {
                       {geoSearchResults.precincts.map(r => (
                         <button key={r.pct} onMouseDown={() => { selectGeo(r.pct); setGeoFocused(false); setSearchQuery(''); }} className={`w-full text-left px-3 py-2 hover:bg-gray-50 ${activeGeo === r.pct ? 'bg-gray-50' : ''}`}>
                           <div className="text-[12px] font-bold text-black">{r.pct}</div>
-                          <div className="text-[10px] text-gray-500">{r.hoods}</div>
+                          <div className="text-[10px] text-gray-500">{r.via
+                            ? <>{r.via.name}{r.via.share < 0.85 ? ` (${Math.round(r.via.share * 100)}% of the neighborhood)` : ''}{r.hoods ? ` · ${r.hoods}` : ''}</>
+                            : r.hoods}</div>
                         </button>
                       ))}
                     </>

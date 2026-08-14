@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { geoPath, geoMercator } from 'd3-geo';
 import crimeHistory from '../data/crime_history.json';
 import precinctGeoJSON from '../data/nyc_precincts.json';
+import councilData from '../data/council_districts.json';
+import SubscribeBand from './Subscribe';
 import {
   VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatRate, formatGeoName, geoWithArticle, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
@@ -402,7 +404,7 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           counts alone. Same window on both sides; hidden on the weekly view (per-100k
           on one week is noise) and for tourist hubs / precincts with no population. */}
       <h1 className="text-[25px] sm:text-[30px] lg:text-[35px] font-black leading-[1.15] tracking-tight mb-5 text-black">
-        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span> {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
+        <span style={{ color: totals.diff > 0 ? '#c2410c' : '#15803d' }}>Major index offenses are {totals.diff > 0 ? 'up' : 'down'} {Math.abs(totals.mPct).toFixed(1).replace(/\.0$/, '')}%</span>{activeGeo === 'citywide' ? ' citywide' : ''} {activeTab === 'ytd' ? 'year-to-date' : activeTab === 'r52' ? 'over the last 52 weeks' : 'this week'} {activeGeo === 'citywide' ? '' : `in ${geoWithArticle(activeGeo)} `}compared to {activeTab === 'r52' ? 'the 52 weeks before that' : 'last year'}.
 
       </h1>
       {activeGeo.includes('Precinct') && !isTouristPrecinct && activePop && activeTab !== 'wtd' && totals.citywideRate > 0 && (() => {
@@ -513,6 +515,11 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </div>
         <NationalSidebar rtciData={rtciData} downloadCSV={downloadCSV} />
       </section>
+
+      {/* Council-district signup, standalone: no district context here, so the band asks
+          for an address or a district pick. The full band with the email preview lives on
+          the By Council District tab. */}
+      <SubscribeBand standalone districts={councilData.districts} />
     </div>
   );
 }
