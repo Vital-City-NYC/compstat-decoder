@@ -1,0 +1,59 @@
+name: Pre-flight digest
+
+# Monday afternoon, after the noon data scrape: render every subscribed district's
+# email from the fresh data, run the smell tests, and email the digest to the
+# internal reviewers. Scheduled runs only proceed on the FIRST Monday of the month
+# (the monthly cycle); a manual run proceeds always.
+
+on:
+  schedule:
+    - cron: '0 18 * * 1'   # Mondays 2pm ET / 1pm EST
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Only the first Monday of the month (scheduled runs)
+        if: github.event_name == 'schedule'
+        run: |
+          if [ "$(date -u +%d)" -gt 7 ]; then
+            echo "Not the first Monday — nothing to do."
+            echo "SKIP=1" >> "$GITHUB_ENV"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: env.SKIP != '1'
+        with:
+          python-version: '3.11'
+
+      - name: Render, vet, and build the digest from the live audience
+        if: env.SKIP != '1'
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: |
+          python3 scripts/preflight.py --subscribers mailchimp \
+            --note "The automated Tuesday send is not switched on yet — nothing goes out unless Ted runs the cycle by hand."
+
+      - name: Email the digest to the reviewers
+        if: env.SKIP != '1'
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: |
+          python3 scripts/send_digest.py \
+            --recipients talcorn@vitalcitynyc.org aesguerra@vitalcitynyc.org
+
+      - name: File an alarm issue on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create -R "$GITHUB_REPOSITORY" \
+            --title "ALARM: pre-flight digest failed $(date -u +%Y-%m-%d)" \
+            --body "@tedalcorn The pre-flight digest job failed — the reviewers did not get this cycle's report. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true

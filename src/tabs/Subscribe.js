@@ -3,13 +3,15 @@ import vcLogo from '../vitalcity-logo.png';
 import { VC, pctColor, dirPct, expandCrime, formatPeriodDate } from '../shared';
 
 /* ------------------------------------------------------------------ */
-/* SUBSCRIBE BAND + MOCK EMAIL PREVIEW                                 */
+/* SUBSCRIBE BAND + EMAIL PREVIEW                                      */
 /* Full-width band at the foot of the Council Districts tab, styled    */
 /* after the vitalcitynyc.org newsletter box (citron #dde44c, white    */
 /* inputs, black button). Collects email, cadence and district, then   */
 /* shows a mock-up of the email built from the district's live         */
-/* numbers. No email service is connected yet: the signup is stored    */
-/* locally and the success state says delivery is coming soon.         */
+/* numbers. Signups write to the "CompStat Decoder Subscribers"        */
+/* audience in Mailchimp via its public form endpoint (JSONP — the     */
+/* private API key never touches the browser). Report delivery is the  */
+/* send job, wired separately.                                         */
 /* ------------------------------------------------------------------ */
 
 const VC_CITRON = '#dde44c'; // newsletter-box background from the VC site stylesheet
@@ -35,6 +37,33 @@ const pointInGeometry = (pt, geom) => {
 const districtForPoint = (pt, districts) => districts.find(d => pointInGeometry(pt, d.geometry)) || null;
 
 const CADENCES = ['Quarterly', 'Monthly', 'Weekly'];
+
+/* Mailchimp signup via the audience's public form endpoint — the same IDs every
+   embedded Mailchimp form exposes, so nothing secret ships to the browser. post-json
+   returns JSONP, which gives an inline success/error with no backend of our own. */
+const MC_HOST = 'https://vitalcitynyc.us5.list-manage.com';
+const MC_U = '2feddb33cbe9c2118e75fdc1c';
+const MC_ID = 'bf42451be9';
+const mcSubscribe = ({ email, district, cadence, vcNews }) => new Promise((resolve, reject) => {
+  const cb = 'mcJsonp' + Math.random().toString(36).slice(2);
+  const params = new URLSearchParams({
+    u: MC_U, id: MC_ID, EMAIL: email, CADENCE: cadence.toLowerCase(),
+    VC_NEWS: vcNews ? 'yes' : 'no', c: cb,
+  });
+  if (district != null) params.set('DISTRICT', String(district));
+  const script = document.createElement('script');
+  const cleanup = () => { clearTimeout(timer); delete window[cb]; script.remove(); };
+  const timer = setTimeout(() => { cleanup(); reject(new Error('The signup service did not respond — please try again.')); }, 15000);
+  window[cb] = (resp) => {
+    cleanup();
+    const msg = String(resp.msg || '').replace(/<[^>]*>/g, '');
+    if (resp.result === 'success' || /already subscribed/i.test(msg)) resolve(msg);
+    else reject(new Error(msg || 'Signup failed — please try again.'));
+  };
+  script.onerror = () => { cleanup(); reject(new Error('The signup service could not be reached — please try again.')); };
+  script.src = `${MC_HOST}/subscribe/post-json?${params.toString()}`;
+  document.body.appendChild(script);
+});
 
 /* ------------------------------------------------------------------ */
 /* Mock email, in Vital City's house style: black rules, serif body,   */
@@ -158,6 +187,9 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [signedUp, setSignedUp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skippedDistrict, setSkippedDistrict] = useState(false);
+  const [vcNews, setVcNews] = useState(false);
+  const [mcState, setMcState] = useState('idle'); // idle | sending | error
+  const [mcError, setMcError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
   const debounce = useRef(null);
 
@@ -186,13 +218,17 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
     return () => clearTimeout(debounce.current);
   }, [address, addressMode, districts]);
 
+  const finalize = (district) => {
+    setMcState('sending'); setMcError('');
+    return mcSubscribe({ email, district, cadence, vcNews })
+      .then(() => setMcState('idle'))
+      .catch((err) => { setMcState('error'); setMcError(err.message); throw err; });
+  };
   const submit = (e) => {
     e.preventDefault();
-    if (!emailOk || (!standalone && !effective)) return;
-    try {
-      localStorage.setItem('cd_subscribe_mock', JSON.stringify({ email, cadence, district: effective ? effective.district : null }));
-    } catch {}
-    setSignedUp(true);
+    if (!emailOk || (!standalone && !effective) || mcState === 'sending') return;
+    if (standalone) { setSignedUp(true); return; } // the Mailchimp write happens when the district step completes
+    finalize(effective.district).then(() => setSignedUp(true)).catch(() => {});
   };
 
   // One combobox: type an address OR a district number / member name, or open it and
@@ -205,7 +241,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
           : districts;
         const pick = (d) => {
           setChosenDistrict(d); setAddressMode(false); setAddress(''); setPickerOpen(false);
-          try { localStorage.setItem('cd_subscribe_mock', JSON.stringify({ email, cadence, district: d.district })); } catch {}
+          finalize(d.district).catch(() => {});
         };
         return (
           <div className="mb-4 max-w-md relative">
@@ -248,10 +284,13 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             : skippedDistrict ? `You're set: ${cadence.toLowerCase()} updates.`
             : 'You\u2019re in \u2014 which Council district should we watch for you?'}
         </div>
+        {mcState === 'error' && (
+          <p className="text-[12px] font-bold mt-1" style={{ color: '#c0392b' }}>{mcError}</p>
+        )}
         {!effective && !skippedDistrict && (
           <div className="mt-3">
             {districtPicker()}
-            <button type="button" onClick={() => setSkippedDistrict(true)}
+            <button type="button" onClick={() => { setSkippedDistrict(true); finalize(null).catch(() => {}); }}
               className="text-[12px] underline text-black/70 hover:opacity-70 -mt-2 block">
               Skip for now
             </button>
@@ -342,11 +381,18 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             </button>
           ))}
         </div>
-        <button type="submit" disabled={!emailOk || (!standalone && !effective)}
+        <button type="submit" disabled={!emailOk || (!standalone && !effective) || mcState === 'sending'}
           className={`w-full sm:w-auto font-black uppercase tracking-widest text-white bg-black disabled:opacity-40 ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-[11px]'}`}>
-          Sign up
+          {mcState === 'sending' ? 'Signing up\u2026' : 'Sign up'}
         </button>
       </div>
+      <label className={`flex items-center gap-1.5 text-[12px] text-black/80 cursor-pointer ${compact ? 'mt-1.5' : 'mt-2.5'}`}>
+        <input type="checkbox" checked={vcNews} onChange={(e) => setVcNews(e.target.checked)} />
+        Also send me Vital City&rsquo;s newsletter
+      </label>
+      {mcState === 'error' && (
+        <p className="text-[12px] font-bold mt-1.5" style={{ color: '#c0392b' }}>{mcError}</p>
+      )}
     </form>
   );
 }

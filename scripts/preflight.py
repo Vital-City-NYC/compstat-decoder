@@ -43,6 +43,34 @@ def load_subscribers(path):
         r["DISTRICT"] = int(r["DISTRICT"])
     return rows
 
+def load_subscribers_mailchimp():
+    """Live audience pull. Members tagged internal-digest (staff who receive this
+    report) are excluded from subscriber counts."""
+    import base64, os, urllib.request
+    key = os.environ.get("MAILCHIMP_API_KEY") or (ROOT / ".mailchimp_key").read_text().strip()
+    dc = key.rsplit("-", 1)[1]
+    rows, offset = [], 0
+    while True:
+        req = urllib.request.Request(
+            f"https://{dc}.api.mailchimp.com/3.0/lists/bf42451be9/members"
+            f"?count=1000&offset={offset}&status=subscribed"
+            "&fields=members.email_address,members.merge_fields,members.tags,total_items")
+        req.add_header("Authorization", "Basic " + base64.b64encode(f"anystring:{key}".encode()).decode())
+        page = json.load(urllib.request.urlopen(req))
+        for m in page["members"]:
+            if any(t["name"] == "internal-digest" for t in m.get("tags", [])):
+                continue
+            mf = m.get("merge_fields", {})
+            d = mf.get("DISTRICT")
+            cadence = str(mf.get("CADENCE") or "monthly").strip().lower() or "monthly"
+            rows.append({"Email Address": m["email_address"],
+                         "DISTRICT": int(d) if d not in ("", None) else None,
+                         "CADENCE": cadence})
+        offset += 1000
+        if offset >= page["total_items"]:
+            break
+    return rows
+
 def vet_district(n, computed, flags):
     """Smell tests on one district's computed numbers."""
     for r in computed["rows"]:
@@ -65,7 +93,9 @@ def vet_district(n, computed, flags):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--subscribers", default=str(ROOT / "email_preview/subscribers_sample.csv"))
+    ap.add_argument("--subscribers", default=str(ROOT / "email_preview/subscribers_sample.csv"),
+                    help="CSV path, or the word 'mailchimp' for the live audience")
+    ap.add_argument("--note", default="", help="extra sentence for the digest header (e.g. send-job status)")
     ap.add_argument("--cadence", default="monthly", choices=["monthly", "quarterly"])
     ap.add_argument("--out", default=str(ROOT / "email_preview"))
     args = ap.parse_args()
@@ -84,7 +114,10 @@ def main():
     if age > MAX_AGE_DAYS:
         sys.exit(f"STALE FEED: data through {week_end} ({age} days old) — refusing to prepare a send.")
 
-    subs = load_subscribers(args.subscribers)
+    subs = (load_subscribers_mailchimp() if args.subscribers == "mailchimp"
+            else load_subscribers(args.subscribers))
+    no_district = [x for x in subs if x["DISTRICT"] is None]
+    subs = [x for x in subs if x["DISTRICT"] is not None]
     cycle_subs = [s for s in subs if s["CADENCE"].lower() == args.cadence]
     by_district = {}
     for s in cycle_subs:
@@ -153,6 +186,8 @@ def main():
     {rows_html}
   </table>
   {f'<p style="font-size:12px;color:#6b7280;">Waiting for the {"quarterly" if args.cadence == "monthly" else "monthly"} cycle instead: district {", ".join(skipped)}.</p>' if skipped else ''}
+  {f'<p style="font-size:12px;color:#6b7280;">{len(no_district)} subscriber{"s" if len(no_district) != 1 else ""} signed up without picking a district yet — they receive nothing until they do.</p>' if no_district else ''}
+  {f'<p style="font-size:12px;color:#8a6d00;font-weight:700;">{html.escape(args.note)}</p>' if args.note else ''}
 </div></div></body>"""
     dst = outdir / "preflight_digest.html"
     dst.write_text(digest)
