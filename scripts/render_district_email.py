@@ -50,6 +50,20 @@ def dir_pct(v):
     n = f"{abs(v):.1f}".rstrip("0").rstrip(".")
     return (f"Up {n}%", RED) if v > 0 else (f"Down {n}%", GREEN)
 
+def populations():
+    src = (ROOT / "src/shared.js").read_text()
+    block = re.search(r"GEO_POPULATIONS = \{(.*?)\};", src, re.S).group(1)
+    pops = {k: int(v) for k, v in re.findall(r'"([^"]+)":\s*([0-9]+)', block)}
+    pb_block = re.search(r"PATROL_BOROUGHS = \{(.*?)\};", src, re.S).group(1)
+    boro_of = {}
+    for boro, nums in re.findall(r"'([^']+)':\s*\[([0-9,\s]+)\]", pb_block):
+        for num in re.findall(r"[0-9]+", nums):
+            boro_of[int(num)] = boro
+    citywide_pop = int(re.search(r"CITYWIDE_POPULATION = ([0-9]+)", src).group(1))
+    return pops, boro_of, citywide_pop
+
+TOURIST = {"14th Precinct", "18th Precinct", "22nd Precinct"}
+
 def neighborhoods():
     s = (ROOT / "src/shared.js").read_text()
     block = re.search(r"PRECINCT_NEIGHBORHOODS\s*=\s*\{(.*?)\};", s, re.S).group(1)
@@ -160,6 +174,68 @@ def render_district(d, data, hoods, template, cadence, computed=None):
             + "\n".join(pct_cell(r[cat]["pct"], right_pad="8px 0 8px 10px") for cat in ("all", "violent", "property"))
             + "\n</tr>")
 
+    # ---- levels table: per-precinct rate vs borough and citywide ----
+    pops, boro_of, citywide_pop = populations()
+    cw_all = ytd(data["citywide"], MAJORS)
+    city_rate = cw_all["cur"] / citywide_pop * 100000
+    vs_cell = lambda v: (
+        f'<td align="right" style="padding:8px 0 8px 10px;border-bottom:1px solid #f3f4f6;'
+        f"font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;"
+        f'white-space:nowrap;color:{"#c0392b" if v > 0 else "#1f7a3a"};">{"+" if v > 0 else "&minus;"}{abs(round(v))}%</td>')
+    dash_cell = ('<td align="right" style="padding:8px 0 8px 10px;border-bottom:1px solid #f3f4f6;'
+                 "font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;color:#9ca3af;\">&mdash;</td>")
+    plain_cell = lambda txt: (
+        f'<td align="right" style="padding:8px 0 8px 10px;border-bottom:1px solid #f3f4f6;'
+        f"font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;color:#374151;\">{txt}</td>")
+    # "Borough" means the real borough, so the patrol halves are summed (counts and
+    # populations both) — a reader comparing to "Brooklyn" should get all of Brooklyn.
+    BORO_GROUP = {"Manhattan South": "Manhattan", "Manhattan North": "Manhattan",
+                  "Brooklyn South": "Brooklyn", "Brooklyn North": "Brooklyn",
+                  "Queens South": "Queens", "Queens North": "Queens",
+                  "Bronx South": "Bronx", "Bronx North": "Bronx",
+                  "Staten Island": "Staten Island"}
+    boro_rate_cache = {}
+    def boro_rate(patrol_name):
+        group = BORO_GROUP.get(patrol_name)
+        if group not in boro_rate_cache:
+            cnt = pop_sum = 0
+            for pb, g in BORO_GROUP.items():
+                if g != group:
+                    continue
+                t = ytd(data.get(pb, {}), MAJORS) if data.get(pb) else None
+                if t and pops.get(pb):
+                    cnt += t["cur"]
+                    pop_sum += pops[pb]
+            boro_rate_cache[group] = (cnt / pop_sum * 100000) if pop_sum else None
+        return boro_rate_cache[group]
+    rate_rows, foot_notes = [], []
+    for r in rows_data:
+        num_label = r["key"].replace(" Precinct", " Pct")
+        hood = f' <span style="font-weight:400;color:#6b7280;">&middot; {r["hood"].split(",")[0]}</span>' if r["hood"] else ""
+        name_cell = (f'<td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-family:\'Hanken Grotesk\','
+                     f'Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#111;">{num_label}{hood}</td>')
+        count = r["all"]["cur"]
+        pop = pops.get(r["key"])
+        if r["key"] in TOURIST or not pop:
+            reason = ("its daytime population far exceeds its residents" if r["key"] in TOURIST
+                      else "no population figure is published for it")
+            foot_notes.append(f"the {num_label.replace(' Pct', 'th' if False else ' Pct')}: {reason}")
+            rate_rows.append(f"<tr>{name_cell}{plain_cell(f'{count:,}')}{dash_cell}{dash_cell}{dash_cell}</tr>")
+            continue
+        rate = count / pop * 100000
+        boro = boro_of.get(int(r["key"].split(chr(116))[0][:-2] if False else re.match(r"([0-9]+)", r["key"]).group(1)))
+        br = boro_rate(boro) if boro else None
+        cells = plain_cell(f"{count:,}") + plain_cell(f"{rate:,.0f}")
+        cells += vs_cell((rate / br - 1) * 100) if br else dash_cell
+        cells += vs_cell((rate / city_rate - 1) * 100)
+        rate_rows.append(f"<tr>{name_cell}{cells}</tr>")
+    if foot_notes:
+        foot = ('<p style="font-family:\'Hanken Grotesk\',Arial,Helvetica,sans-serif;font-size:10px;'
+                'line-height:1.6;color:#9ca3af;margin:0 0 6px 0;">Rates use residential population, so no '
+                'comparable rate exists for ' + "; ".join(foot_notes) + ".</p>")
+    else:
+        foot = ""
+
     member = f" &middot; Council Member {d['member']}" if d.get("member") else ""
     link = f"{SITE}?tab=council&district={n}"
     out = template
@@ -181,6 +257,9 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         "{{CITYWIDE_VIOLENT}}": pct_cell(cw["violent"]),
         "{{CITYWIDE_PROPERTY}}": pct_cell(cw["property"]),
         "{{LINK}}": link,
+        "{{CITY_RATE}}": f"{city_rate:,.0f}",
+        "{{RATE_ROWS}}": "\n".join(rate_rows),
+        "{{RATE_FOOTNOTE}}": foot,
         "{{WEEK_END}}": through,
     }.items():
         out = out.replace(token, value)
