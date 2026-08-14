@@ -139,10 +139,10 @@ def render_district(d, data, hoods, template, cadence, computed=None):
     down = sum(1 for r in rows_data if (r["all"]["pct"] or 0) < 0)
     total = len(rows_data)
     if down * 2 >= total:
-        headline = f"Crime is down in {down} of the {total} precincts that make up your district"
+        headline = f"Year-to-date, crime is down in {down} of the {total} precincts that make up your district"
     else:
         up = sum(1 for r in rows_data if (r["all"]["pct"] or 0) > 0)
-        headline = f"Crime is up in {up} of the {total} precincts that make up your district"
+        headline = f"Year-to-date, crime is up in {up} of the {total} precincts that make up your district"
 
     week_end = data["citywide"]["report_period"]["week_end"]
     through = datetime.strptime(week_end, "%m/%d/%Y").strftime("%B %-d, %Y")
