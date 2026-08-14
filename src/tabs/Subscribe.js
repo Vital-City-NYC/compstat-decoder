@@ -147,11 +147,11 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
 /* ------------------------------------------------------------------ */
 /* The signup band itself                                              */
 /* ------------------------------------------------------------------ */
-export default function SubscribeBand({ district, districts, f, rows, period, compact = false }) {
+export default function SubscribeBand({ district, districts, f, rows, period, compact = false, standalone = false }) {
   const [email, setEmail] = useState('');
   const [cadence, setCadence] = useState('Quarterly');
   const [chosenDistrict, setChosenDistrict] = useState(null); // null = follow the district being viewed
-  const [addressMode, setAddressMode] = useState(false);
+  const [addressMode, setAddressMode] = useState(standalone);
   const [address, setAddress] = useState('');
   const [suggestion, setSuggestion] = useState(null); // { label, district }
   const [lookupState, setLookupState] = useState('idle'); // idle | searching | done | error
@@ -186,7 +186,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
 
   const submit = (e) => {
     e.preventDefault();
-    if (!emailOk) return;
+    if (!emailOk || !effective) return;
     try {
       localStorage.setItem('cd_subscribe_mock', JSON.stringify({ email, cadence, district: effective.district }));
     } catch {}
@@ -200,7 +200,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
           You're set: {cadence.toLowerCase()} updates on Council District {effective.district}.
         </div>
         <p className="text-[12px] text-black/70 mt-1 mb-3">Email delivery is coming soon — here's a preview of what you'll receive.</p>
-        {!showPreview ? (
+        {(f && rows) ? (!showPreview ? (
           <button onClick={() => setShowPreview(true)}
             className="text-[11px] font-black uppercase tracking-widest text-white bg-black px-4 py-2.5">
             Preview the email
@@ -208,6 +208,11 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
         ) : (
           <EmailPreview email={email} cadence={cadence} district={effective}
             f={f} rows={rows} period={period} />
+        )) : (
+          <a href={`?tab=council&district=${effective.district}`}
+            className="text-[11px] font-black uppercase tracking-widest text-white bg-black px-4 py-2.5 inline-block no-underline">
+            See your district&rsquo;s page
+          </a>
         )}
       </div>
     );
@@ -218,14 +223,20 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
       {/* Title row: bold title + address link in parentheses */}
       <div className={`flex flex-wrap items-baseline gap-x-2 gap-y-0.5 ${compact ? 'mb-1.5' : 'mb-4'}`}>
         <h4 className={`${compact ? 'text-[13px]' : 'text-[16px] sm:text-[19px]'} font-black text-black leading-tight`}>
-          Subscribe for updates on crime trends in Council District {effective.district}
+          Subscribe for updates on crime trends in {effective ? `Council District ${effective.district}` : 'your City Council district'}
         </h4>
-        {!addressMode && (
+        {!addressMode && !standalone && (
           <span className="text-[12px] text-black/70">
             (not your district?{' '}
             <button type="button" onClick={() => setAddressMode(true)} className="underline font-bold hover:opacity-70">
               Enter your address
             </button>)
+          </span>
+        )}
+        {standalone && chosenDistrict && (
+          <span className="text-[12px] text-black/70">
+            ({chosenDistrict.member || 'chosen'} &middot;{' '}
+            <button type="button" onClick={() => { setChosenDistrict(null); setAddressMode(true); }} className="underline font-bold hover:opacity-70">change</button>)
           </span>
         )}
       </div>
@@ -248,7 +259,17 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             </div>
           )}
           {lookupState === 'done' && !suggestion && address.trim().length >= 6 && (
-            <div className="text-[11px] text-black/60 mt-1">No NYC match found — keep typing or pick a district on the map above.</div>
+            <div className="text-[11px] text-black/60 mt-1">No NYC match found — keep typing{standalone ? ' or pick a district below' : ' or pick a district on the map above'}.</div>
+          )}
+          {standalone && !chosenDistrict && (
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <span className="text-[12px] text-black/70">or</span>
+              <select value="" onChange={(e) => { const d = districts.find(x => x.district === +e.target.value); if (d) { setChosenDistrict(d); setAddressMode(false); setAddress(''); } }}
+                className="border border-gray-800 bg-white px-2 py-1.5 text-[13px] focus:outline-none">
+                <option value="">Pick your Council district…</option>
+                {districts.map(d => <option key={d.district} value={d.district}>District {d.district}{d.member ? ` — ${d.member}` : ''}</option>)}
+              </select>
+            </div>
           )}
         </div>
       )}
@@ -267,7 +288,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             </button>
           ))}
         </div>
-        <button type="submit" disabled={!emailOk}
+        <button type="submit" disabled={!emailOk || !effective}
           className={`w-full sm:w-auto font-black uppercase tracking-widest text-white bg-black disabled:opacity-40 ${compact ? 'px-3 py-1.5 text-[10px]' : 'px-5 py-2.5 text-[11px]'}`}>
           Sign up
         </button>
