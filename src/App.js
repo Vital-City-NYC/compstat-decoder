@@ -59,7 +59,7 @@ export default function App() {
   const [activeGeo, setActiveGeo] = useState(initialParams.get('geo') || 'citywide');
   const [districtNum, setDistrictNum] = useState(() => {
     const d = parseInt(initialParams.get('district'), 10);
-    return d >= 1 && d <= 51 ? d : 15;
+    return d >= 1 && d <= 51 ? d : null; // no default district — the council tab shows a chooser instead of pretending everyone lives in D15
   });
   const [rawData, setRawData] = useState(FALLBACK_DATA);
   const [geoFocused, setGeoFocused] = useState(false);
@@ -119,7 +119,7 @@ export default function App() {
     if (mapCrime !== 'all') params.set('mapCrime', mapCrime);
     // On the council tab, always pin the district in the URL (including 15) so sharing the
     // page always deep-links to the district on screen — no district is the "empty" default.
-    if (mainTab === 'council') params.set('district', String(districtNum));
+    if (mainTab === 'council' && districtNum) params.set('district', String(districtNum));
     const qs = params.toString();
     const newUrl = window.location.pathname + (qs ? '?' + qs : '') + window.location.hash;
     if (newUrl !== window.location.pathname + window.location.search + window.location.hash) {

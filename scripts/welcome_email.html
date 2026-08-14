@@ -23,6 +23,15 @@
 
   <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#374151;margin:0 0 22px 0;">You can change your district or frequency, or unsubscribe, at any time using the links at the bottom of every email.</p>
 
+*|IF:DISTRICT|*
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px 0;">
+  <tr>
+    <td style="background:#dde34c;" bgcolor="#dde34c">
+      <a href="https://vital-city-nyc.github.io/compstat-decoder/?tab=council&district=*|DISTRICT|*" style="display:inline-block;padding:13px 22px;font-family:'Inter',Arial,Helvetica,sans-serif;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#000000;text-decoration:none;">Explore your district &rarr;</a>
+    </td>
+  </tr>
+  </table>
+*|ELSE:|*
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px 0;">
   <tr>
     <td style="background:#dde34c;" bgcolor="#dde34c">
@@ -30,6 +39,7 @@
     </td>
   </tr>
   </table>
+*|END:IF|*
 
   <p style="border-top:1px solid #e5e7eb;margin:26px 0 0 0;padding:12px 0 30px 0;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:10px;line-height:1.7;color:#9ca3af;">
     You&rsquo;re receiving this because you signed up for district crime updates at the CompStat Decoder.

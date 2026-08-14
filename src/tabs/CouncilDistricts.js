@@ -380,9 +380,41 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
   );
 };
 
+/* Landing state for the council tab when no district is in the URL: pick, don't presume. */
+function DistrictChooser({ districts, setDistrictNum }) {
+  const [q, setQ] = useState('');
+  const norm = q.trim().toLowerCase();
+  const num = parseInt(norm.replace(/^district\s*/, ''), 10);
+  const matches = norm
+    ? districts.filter(d => d.district === num || (d.member || '').toLowerCase().includes(norm))
+    : districts;
+  return (
+    <div className="max-w-xl">
+      <div className="bg-gray-50 rounded-sm border border-gray-200 p-5">
+        <h2 className="text-xl sm:text-2xl font-black font-serif mb-1">Which Council district?</h2>
+        <p className="text-[13px] text-gray-600 mb-3">Pick yours below, or type a district number or member name. (Don&rsquo;t know it? The search box at the top of the page can find your precinct from an address.)</p>
+        <input type="text" value={q} onChange={(e) => setQ(e.target.value)} autoFocus
+          placeholder="District number or Council member&hellip;"
+          className="w-full border border-gray-300 rounded bg-white px-3 py-2 text-[14px] font-bold focus:outline-none focus:border-gray-500 mb-2" />
+        <div className="max-h-72 overflow-y-auto border border-gray-200 bg-white rounded-sm">
+          {matches.map(d => (
+            <button key={d.district} onClick={() => setDistrictNum(d.district)}
+              className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0">
+              <span className="text-[13px] font-black text-black">District {d.district}</span>
+              {d.member && <span className="text-[13px] text-gray-500"> — {d.member}</span>}
+            </button>
+          ))}
+          {matches.length === 0 && <div className="px-3 py-3 text-[13px] text-gray-500">No match — try a number 1&ndash;51 or a member&rsquo;s name.</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CouncilDistricts({ rawData, activeTab, districtNum, setDistrictNum, contextData, onSelectPrecinct, downloadCSV }) {
   const districts = councilData.districts;
-  const district = districts.find(d => d.district === districtNum) || districts[0];
+  const chosen = districts.find(d => d.district === districtNum) || null;
+  const district = chosen || districts[0]; // placeholder for computations; render is gated on `chosen`
 
   // YTD shooting incidents (fetched once, cached across district switches).
   const [shootings, setShootings] = useState(null);
@@ -499,6 +531,10 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       <span className="text-[8px] font-bold">{typeof t.pct === 'number' ? dirPct(t.pct) : '\u2014'}</span>
     </td>
   );
+
+  if (!chosen) {
+    return <DistrictChooser districts={districts} setDistrictNum={setDistrictNum} />;
+  }
 
   return (
     <>
