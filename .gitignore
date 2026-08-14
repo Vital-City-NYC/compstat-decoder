@@ -23,3 +23,5 @@ yarn-debug.log*
 yarn-error.log*
 .claude/worktrees/
 .mailchimp_key
+JOSH_MIGRATION_QUESTIONS.txt
+MIGRATION_PLAN.txt
