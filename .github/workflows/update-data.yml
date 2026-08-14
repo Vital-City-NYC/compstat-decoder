@@ -1,0 +1,54 @@
+name: Update CompStat data
+
+# The dashboard reads its feed from this repo, so if this job stops running the site
+# quietly freezes — the same failure mode as reading a retired workbook. The scraper
+# refuses to write when a workbook lags the citywide report, so a failed run means the
+# NYPD changed something; read the log before overriding it.
+on:
+  schedule:
+    - cron: '0 16 * * 1'   # Mondays 12pm ET / 11am EST, after the NYPD posts
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Scrape the weekly CompStat workbooks
+        run: python3 scripts/scrape_compstat.py
+
+      - name: Extend the weekly series and rebuild the 52-week rollup
+        run: python3 scripts/archive_weekly_series.py
+
+      - name: Rebuild the revision and volatility context
+        run: python3 scripts/build_context.py
+
+      # Nothing depends on the upstream scraper any more, but a second independent parse of
+      # the same NYPD workbooks is a free tripwire for a changed file or column layout. It
+      # never blocks the update — if it reports drift, check the log and decide.
+      - name: Cross-check against the upstream scraper
+        continue-on-error: true
+        run: python3 scripts/crosscheck_upstream.py
+
+      - name: Commit whatever changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "No change — the NYPD has not posted a new report."
+          else
+            git commit -m "Weekly CompStat update ($(date -u +%Y-%m-%d))"
+            git push
+          fi
