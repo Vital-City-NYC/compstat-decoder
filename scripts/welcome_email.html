@@ -1,0 +1,43 @@
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;">
+
+<tr><td align="center" style="padding:34px 32px 22px 32px;background:#ffffff;">
+  <img src="https://mcusercontent.com/2feddb33cbe9c2118e75fdc1c/images/b8c406bb-27b8-ae6a-4c35-6c8288ff95e7.png" alt="Vital City" width="228" height="55" style="display:block;width:228px;height:55px;">
+</td></tr>
+
+<tr><td style="background:#000000;padding:34px 40px 36px 40px;" bgcolor="#000000">
+  <div style="font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#dde34c;padding-bottom:14px;">CompStat&nbsp;Decoder</div>
+  <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:1.3;font-weight:900;color:#ffffff;margin:0;">You&rsquo;re on the list</h1>
+</td></tr>
+
+<tr><td style="padding:26px 40px 0 40px;">
+
+  <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#374151;margin:0 0 16px 0;">Thanks for subscribing to Vital City&rsquo;s CompStat Decoder.</p>
+
+  *|IF:DISTRICT|*
+  <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#374151;margin:0 0 16px 0;">You&rsquo;ll receive *|CADENCE|* updates on crime trends in <strong>Council District *|DISTRICT|*</strong>, built from the NYPD&rsquo;s own weekly CompStat data &mdash; how each precinct in your district is trending, what&rsquo;s driving the change, and how your district compares with the city as a whole.</p>
+  *|ELSE:|*
+  <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#374151;margin:0 0 16px 0;">You&rsquo;ll receive *|CADENCE|* updates on crime trends in your Council district, built from the NYPD&rsquo;s own weekly CompStat data. You haven&rsquo;t picked a district yet &mdash; use the button below to find yours (the search box can look it up from your address).</p>
+  *|END:IF|*
+
+  <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.7;color:#374151;margin:0 0 22px 0;">You can change your district or frequency, or unsubscribe, at any time using the links at the bottom of every email.</p>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 6px 0;">
+  <tr>
+    <td style="background:#dde34c;" bgcolor="#dde34c">
+      <a href="https://vital-city-nyc.github.io/compstat-decoder/?tab=council" style="display:inline-block;padding:13px 22px;font-family:'Inter',Arial,Helvetica,sans-serif;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#000000;text-decoration:none;">Explore your district &rarr;</a>
+    </td>
+  </tr>
+  </table>
+
+  <p style="border-top:1px solid #e5e7eb;margin:26px 0 0 0;padding:12px 0 30px 0;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:10px;line-height:1.7;color:#9ca3af;">
+    You&rsquo;re receiving this because you signed up for district crime updates at the CompStat Decoder.
+    <a href="*|UNSUB|*" style="color:#9ca3af;">Unsubscribe</a> &middot; <a href="*|UPDATE_PROFILE|*" style="color:#9ca3af;">Manage preferences</a><br>
+    Vital City &middot; *|LIST:ADDRESSLINE|* &middot; vitalcitynyc.org
+  </p>
+
+</td></tr>
+</table>
+</td></tr>
+</table>
