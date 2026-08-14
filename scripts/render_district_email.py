@@ -73,8 +73,9 @@ def pct_cell(v, right_pad="9px 0 9px 10px", weight="700"):
             f"font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;"
             f'font-weight:{weight};white-space:nowrap;color:{color};">{label}</td>')
 
-def render_district(d, data, hoods, template, cadence):
-    n = d["district"]
+def compute_district(d, data, hoods):
+    """All of a district's numbers: per-precinct rows, weighted aggregate, driver.
+    Shared by the renderer and by preflight.py's vet checks."""
     rows_data = []
     for o in sorted(d["precincts"], key=lambda x: -x["share"]):
         key = f"{ordinal(o['precinct'])} Precinct"
@@ -87,7 +88,7 @@ def render_district(d, data, hoods, template, cadence):
             continue
         rows_data.append({"key": key, "share": o["share"], "hood": hoods.get(key, ""), **stats})
     if not rows_data:
-        raise RuntimeError(f"district {n}: no computable precincts")
+        raise RuntimeError(f"district {d['district']}: no computable precincts")
 
     # weighted district aggregate + per-crime driver, same math as the website
     w = {}
@@ -115,6 +116,12 @@ def render_district(d, data, hoods, template, cadence):
         if (diff > 0) == (net_sign > 0) and (driver is None or abs(diff) > abs(driver["diff"])):
             driver = {"name": name, "diff": diff, "pct": (cur - pri) / pri * 100}
 
+    return {"rows": rows_data, "weighted": w, "driver": driver}
+
+def render_district(d, data, hoods, template, cadence, computed=None):
+    n = d["district"]
+    c = computed or compute_district(d, data, hoods)
+    rows_data, w, driver = c["rows"], c["weighted"], c["driver"]
     down = sum(1 for r in rows_data if (r["all"]["pct"] or 0) < 0)
     total = len(rows_data)
     if down * 2 >= total:
