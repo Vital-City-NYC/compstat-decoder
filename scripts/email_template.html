@@ -1,0 +1,67 @@
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#f4f4f4;">
+<tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:#ffffff;">
+
+<tr><td align="center" style="padding:34px 32px 22px 32px;background:#ffffff;">
+  <img src="https://mcusercontent.com/2feddb33cbe9c2118e75fdc1c/images/b8c406bb-27b8-ae6a-4c35-6c8288ff95e7.png" alt="Vital City" width="228" height="55" style="display:block;width:228px;height:55px;">
+</td></tr>
+
+<tr><td style="background:#000000;padding:34px 40px 36px 40px;" bgcolor="#000000">
+  <div style="font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:10px;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:#dde34c;padding-bottom:14px;">District&nbsp;{{DISTRICT}} &middot; {{CADENCE}}&nbsp;crime&nbsp;update</div>
+  <h1 style="font-family:Georgia,'Times New Roman',serif;font-size:27px;line-height:1.3;font-weight:900;color:#ffffff;margin:0 0 12px 0;">{{HEADLINE}}</h1>
+  <p style="font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:12px;line-height:1.6;color:#d1d5db;margin:0;">Council District {{DISTRICT}}{{MEMBER_LINE}}<br>NYPD CompStat data through {{THROUGH_DATE}} &middot; All comparisons are {{YEAR_CUR}} year-to-date vs. the same period in {{YEAR_PRI}}</p>
+</td></tr>
+
+<tr><td style="padding:26px 40px 0 40px;">
+
+  <p style="font-family:Georgia,'Times New Roman',serif;font-size:15px;line-height:1.6;color:#374151;margin:0 0 20px 0;">{{INTRO}}</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px 0;">
+  <tr>
+    <th align="left" style="padding:6px 0;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Precinct</th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Share of district</th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">All</th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Violent</th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Property</th>
+  </tr>
+  
+{{PRECINCT_ROWS}}
+  </table>
+
+  <div style="font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding-bottom:6px;">The district in one number</div>
+  <p style="font-family:Georgia,'Times New Roman',serif;font-size:14px;line-height:1.6;color:#374151;margin:0 0 10px 0;">NYPD does not publish crime data by council district. As a simplified summary, we average the precincts above, weighted by each one&rsquo;s share of the district &mdash; an estimate, since precincts extend beyond district lines.</p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 26px 0;">
+  <tr>
+    <th align="left" style="padding:6px 0;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;"></th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">All</th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Violent</th>
+    <th align="right" style="padding:6px 0 0 6px 10px;border-bottom:2px solid #000;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;">Property</th>
+  </tr>
+  <tr><td style="padding:9px 0;border-bottom:1px solid #f3f4f6;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#111;">District {{DISTRICT}} (precinct average, weighted by share)</td>{{DISTRICT_ALL}}{{DISTRICT_VIOLENT}}{{DISTRICT_PROPERTY}}</tr>
+  <tr><td style="padding:9px 0;border-bottom:1px solid #f3f4f6;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:12px;color:#111;">Citywide</td>{{CITYWIDE_ALL}}{{CITYWIDE_VIOLENT}}{{CITYWIDE_PROPERTY}}</tr>
+  </table>
+
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+  <tr>
+    <td style="background:#dde34c;" bgcolor="#dde34c">
+      <a href="{{LINK}}" style="display:inline-block;padding:13px 22px;font-family:'Inter',Arial,Helvetica,sans-serif;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#000000;text-decoration:none;">Explore your district &rarr;</a>
+    </td>
+    <td style="padding-left:18px;">
+      <a href="{{LINK}}" style="font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:12px;font-weight:700;color:#111;text-decoration:underline;">Download the full District {{DISTRICT}} report (PDF)</a>
+    </td>
+  </tr>
+  </table>
+
+  <p style="border-top:1px solid #e5e7eb;margin:26px 0 0 0;padding:12px 0 30px 0;font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:10px;line-height:1.7;color:#9ca3af;">
+    You&rsquo;re receiving this because you signed up for {{CADENCE_LOWER}} updates on Council District {{DISTRICT}} at the CompStat Decoder.
+    <span style="text-decoration:underline;">Unsubscribe</span> &middot; <span style="text-decoration:underline;">Manage preferences</span><br>
+    Source: NYPD CompStat weekly report, week ending {{WEEK_END}}.<br>
+    Vital City &middot; 605 West 113th Street #1A &middot; New York, NY 10025 &middot; vitalcitynyc.org
+  </p>
+
+</td></tr>
+</table>
+</td></tr>
+</table>

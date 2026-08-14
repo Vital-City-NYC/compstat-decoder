@@ -48,6 +48,9 @@ export default function App() {
   // Initialize state from URL query string so deep-links work on first load.
   // Subsequent state changes write back to the URL via replaceState (no history clutter).
   const initialParams = (typeof window !== 'undefined') ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  // Embed mode: the app is framed inside a Ghost page (vitalcitynyc.org/compstat-decoder).
+  // Chrome stays, but links escape the frame and the URL keeps the flag across navigation.
+  const EMBED = initialParams.get('embed') === '1';
   const [appView, setAppView] = useState(initialParams.get('view') || 'live');
   const [mainTab, setMainTab] = useState(TAB_KEYS.includes(initialParams.get('tab')) ? initialParams.get('tab') : 'headlines');
   // 52 weeks is the default: it's the only window that means the same thing all year.
@@ -69,7 +72,10 @@ export default function App() {
   const [isLocating, setIsLocating] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const copyLink = () => {
-    const url = window.location.href;
+    const p = new URLSearchParams(window.location.search);
+    p.delete('embed');
+    const qs = p.toString();
+    const url = window.location.origin + window.location.pathname + (qs ? '?' + qs : '');
     const fallback = () => {
       const ta = document.createElement('textarea');
       ta.value = url; document.body.appendChild(ta); ta.select();
@@ -104,6 +110,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams();
+    if (EMBED) params.set('embed', '1');
     if (appView !== 'live') params.set('view', appView);
     if (mainTab !== 'headlines') params.set('tab', mainTab);
     if (activeTab !== 'r52') params.set('range', activeTab);
@@ -118,7 +125,7 @@ export default function App() {
     if (newUrl !== window.location.pathname + window.location.search + window.location.hash) {
       window.history.replaceState({}, '', newUrl);
     }
-  }, [appView, mainTab, activeTab, activeGeo, mapMode, mapCrime, districtNum]);
+  }, [EMBED, appView, mainTab, activeTab, activeGeo, mapMode, mapCrime, districtNum]);
 
   // Weekly counts don't apply on the transit and council tabs — snap back to YTD there.
   useEffect(() => {
@@ -547,6 +554,13 @@ export default function App() {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               {linkCopied ? 'Copied \u2713' : 'Copy link'}
             </button>
+            {EMBED && (
+              <a href={(() => { const p = new URLSearchParams(window.location.search); p.delete('embed'); const qs = p.toString(); return window.location.pathname + (qs ? '?' + qs : ''); })()}
+                target="_blank" rel="noopener noreferrer"
+                className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors flex-shrink-0 whitespace-nowrap">
+                Open full screen {'\u2197'}
+              </a>
+            )}
             </div>
           </div>
         </div>
