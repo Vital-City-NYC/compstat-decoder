@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { geoPath, geoMercator } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
+import bigParks from '../data/big_parks.json';
 import {
   GEO_POPULATIONS, PRECINCT_NEIGHBORHOODS, VC,
   crimeColor, changeColor, formatRate, TrendingUp, TrendingDown,
@@ -64,6 +65,9 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
           <pattern id="tourist-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2="6" stroke="#1f2937" strokeOpacity="0.5" strokeWidth="1" />
           </pattern>
+          <pattern id="park-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="4" stroke="#3d6b47" strokeOpacity="0.45" strokeWidth="0.9" />
+          </pattern>
         </defs>
         {[...precinctGeoJSON.features]
           .sort((a, b) => (a.properties.precinct === activeHover ? 1 : 0) - (b.properties.precinct === activeHover ? 1 : 0))
@@ -99,6 +103,12 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
             </g>
           );
         })}
+        {/* Major parks: texture only — nobody lives there, and their acreage visually
+            inflates the precincts they sit in. Non-interactive by design. */}
+        {bigParks.features.map((f, i) => (
+          <path key={`park-${i}`} d={pathFn(f)} fill="url(#park-hatch)"
+            stroke="#3d6b47" strokeOpacity="0.35" strokeWidth="0.5" pointerEvents="none" />
+        ))}
       </svg>
       {hoveredData && (() => {
         const pop = GEO_POPULATIONS[hoveredData.precinct];
@@ -153,6 +163,10 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
             <span>High</span>
           </>
         )}
+        <span className="ml-3 pl-3 border-l border-gray-300 flex items-center gap-1" title="Major parks (400+ acres) are textured: nobody lives there, so they add area but not crime rate.">
+          <span className="inline-block w-3 h-3" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(61,107,71,0.5) 2px, rgba(61,107,71,0.5) 3px)' }} />
+          Major parks
+        </span>
         <span className="ml-3 pl-3 border-l border-gray-300 flex items-center gap-1" title="Tourist/commercial precincts: per-100k rates use residential population only and are not comparable. % change is not distorted.">
           <span className="inline-block w-3 h-3" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(31,41,55,0.5) 2px, rgba(31,41,55,0.5) 3px)' }} />
           Tourist hubs: 14th, 18th, 22nd {mapMode === 'rate'
