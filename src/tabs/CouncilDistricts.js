@@ -3,7 +3,7 @@ import { geoPath, geoMercator, geoContains } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import councilData from '../data/council_districts.json';
 import vcLogo from '../vitalcity-logo.png';
-import SubscribeBand from './Subscribe';
+import SubscribeBand, { GEOSEARCH_URL, districtForPoint } from './Subscribe';
 import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
   safeNum, pctColor, dirPct, signedCount, expandCrime,
@@ -380,22 +380,55 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
   );
 };
 
-/* Landing state for the council tab when no district is in the URL: pick, don't presume. */
+/* Landing state for the council tab when no district is in the URL: pick, don't presume.
+   The box takes an address too — geocoded with the same lookup the subscribe flow uses. */
 function DistrictChooser({ districts, setDistrictNum }) {
   const [q, setQ] = useState('');
+  const [suggestion, setSuggestion] = useState(null);
+  const [lookupState, setLookupState] = useState('idle');
+  const debounce = useRef(null);
   const norm = q.trim().toLowerCase();
   const num = parseInt(norm.replace(/^district\s*/, ''), 10);
   const matches = norm
     ? districts.filter(d => d.district === num || (d.member || '').toLowerCase().includes(norm))
     : districts;
+  useEffect(() => {
+    const t = q.trim();
+    // only geocode input that reads like an address, not a number or a name fragment
+    if (t.length < 6 || !/\d/.test(t) || /^district\s*\d*$/i.test(t) || /^\d+$/.test(t)) {
+      setSuggestion(null); setLookupState('idle'); return;
+    }
+    setLookupState('searching');
+    clearTimeout(debounce.current);
+    debounce.current = setTimeout(() => {
+      fetch(GEOSEARCH_URL + encodeURIComponent(t))
+        .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then(gj => {
+          const hit = (gj.features || []).map(ft => ({ ft, d: districtForPoint(ft.geometry.coordinates, districts) })).find(x => x.d);
+          setSuggestion(hit ? { label: hit.ft.properties?.label || t, district: hit.d } : null);
+          setLookupState('done');
+        })
+        .catch(() => { setSuggestion(null); setLookupState('error'); });
+    }, 350);
+    return () => clearTimeout(debounce.current);
+  }, [q, districts]);
   return (
     <div className="max-w-xl">
       <div className="bg-gray-50 rounded-sm border border-gray-200 p-5">
         <h2 className="text-xl sm:text-2xl font-black font-serif mb-1">Which Council district?</h2>
-        <p className="text-[13px] text-gray-600 mb-3">Pick yours below, or type a district number or member name. (Don&rsquo;t know it? The search box at the top of the page can find your precinct from an address.)</p>
+        <p className="text-[13px] text-gray-600 mb-3">Type your address and we&rsquo;ll find it &mdash; or a district number or Council member&rsquo;s name, or pick from the list.</p>
         <input type="text" value={q} onChange={(e) => setQ(e.target.value)} autoFocus
-          placeholder="District number or Council member&hellip;"
+          placeholder="Your address, district number or Council member&hellip;"
           className="w-full border border-gray-300 rounded bg-white px-3 py-2 text-[14px] font-bold focus:outline-none focus:border-gray-500 mb-2" />
+        {lookupState === 'searching' && <div className="text-[11px] text-gray-500 mb-1">Looking up address&hellip;</div>}
+        {suggestion && (
+          <button onClick={() => setDistrictNum(suggestion.district.district)}
+            className="w-full text-left px-3 py-2 mb-2 bg-white border border-gray-800 rounded-sm hover:bg-gray-50">
+            <span className="text-[12px] text-gray-500">{suggestion.label} &rarr; </span>
+            <span className="text-[13px] font-black text-black">District {suggestion.district.district}</span>
+            {suggestion.district.member && <span className="text-[13px] text-gray-500"> — {suggestion.district.member}</span>}
+          </button>
+        )}
         <div className="max-h-72 overflow-y-auto border border-gray-200 bg-white rounded-sm">
           {matches.map(d => (
             <button key={d.district} onClick={() => setDistrictNum(d.district)}

@@ -20,7 +20,7 @@ const VC_CITRON = '#dde44c'; // newsletter-box background from the VC site style
    address; the district is found by point-in-polygon against the same
    boundary file the map renders. Planar ray-casting is used (not
    d3.geoContains) so polygon winding order can't flip the result.     */
-const GEOSEARCH_URL = 'https://geosearch.planninglabs.nyc/v2/autocomplete?text=';
+export const GEOSEARCH_URL = 'https://geosearch.planninglabs.nyc/v2/autocomplete?text=';
 
 const pointInRing = (pt, ring) => {
   let inside = false;
@@ -34,7 +34,7 @@ const pointInGeometry = (pt, geom) => {
   const polys = geom.type === 'Polygon' ? [geom.coordinates] : geom.type === 'MultiPolygon' ? geom.coordinates : [];
   return polys.some(rings => pointInRing(pt, rings[0]) && !rings.slice(1).some(hole => pointInRing(pt, hole)));
 };
-const districtForPoint = (pt, districts) => districts.find(d => pointInGeometry(pt, d.geometry)) || null;
+export const districtForPoint = (pt, districts) => districts.find(d => pointInGeometry(pt, d.geometry)) || null;
 
 const CADENCES = ['Quarterly', 'Monthly']; // the product ships these two; Mailchimp's CADENCE field enforces it
 
