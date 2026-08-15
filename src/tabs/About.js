@@ -127,6 +127,14 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
         early in the year are the least reliable numbers on this site, and a change of a few percentage points may not
         survive revision.
       </P>
+      <P>
+        The same drift affects the rolling 52-week view. Its newest weeks are still accruing revisions while
+        the comparison window has already settled, so the 52-week figures run slightly low &mdash; overstating
+        declines and understating increases. When we measured the gap against revision-adjusted figures, it came
+        to about a third of a percentage point: a raw 52-week decline of 3.8% corresponded to roughly 3.4% once
+        the newest weeks&rsquo; expected revisions were projected forward. The effect is smaller than the same
+        bias in year-to-date comparisons, which is one reason the 52-week window is this site&rsquo;s default.
+      </P>
 
       <H>Historical series, 1993&ndash;2025</H>
       <P>

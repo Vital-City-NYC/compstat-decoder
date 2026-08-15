@@ -8,7 +8,7 @@ import {
   VC, MAJOR_VIOLENT, MAJOR_PROPERTY, PATROL_BOROUGH_NAMES, PRECINCT_NEIGHBORHOODS,
   formatPop, formatRate, formatGeoName, geoWithArticle, expandCrime, expandCrimeTitle, toOrdinalPrecinct,
   getPrePandemicRecovery, precinctHistorySeries, precinctPatrolBorough, numWord,
-  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDateFull, staleGeo,
+  calcPct, dirPct, ProvisionalNote, ytdVolatility, volatilitySentence, VOLATILITY_LABEL, formatPeriodDateShort, staleGeo,
   RTCI_GROUPS, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED, rtciRate,
   Download,
 } from '../shared';
@@ -470,22 +470,20 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
               );
             })}
           </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 text-[12px] text-gray-400">
-            <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}`
-              : activeTab === 'r52' ? (rollingMeta ? `52 weeks ending ${formatPeriodDateFull(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDateFull(rollingMeta.prior_to)}` : 'Loading the weekly series…')
-              : `Week of ${period?.week_start || '—'} to ${period?.week_end || '—'}`}</span>
-            <span className="text-gray-300" aria-hidden>·</span>
-            {/* The provisional note belongs on every view — it carries the measured revision
-                figures in its tooltip and the link explaining them. The 52-week window adds a
-                consequence the other views don't have, so it says both. */}
-            <ProvisionalNote year={endYear} contextData={contextData} />
-            {activeTab === 'r52' && (
-              <>
-                <span className="text-gray-300" aria-hidden>·</span>
-                <span className="text-gray-400">Its newest weeks are still accruing, so the last 52 weeks read slightly low against the 52 before them.</span>
-              </>
-            )}
-          </div>
+          {/* Metadata reads as a footnote: italic, tight. The Past-year view keeps only the
+              window itself — the provisional/accrual caveats live rigorously on About. */}
+          {activeTab === 'r52' ? (
+            <p className="mt-2 text-[12px] italic text-gray-400 leading-snug">
+              {rollingMeta ? `52 weeks ending ${formatPeriodDateShort(rollingMeta.current_to)}, vs the 52 ending ${formatPeriodDateShort(rollingMeta.prior_to)}` : 'Loading the weekly series…'}
+            </p>
+          ) : (
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-0.5 mt-2 text-[12px] italic text-gray-400 leading-snug">
+              <span>{activeTab === 'ytd' ? `Year-to-date through ${period?.week_end || '—'}`
+                : `Week of ${period?.week_start || '—'} to ${period?.week_end || '—'}`}</span>
+              <span className="text-gray-300" aria-hidden>·</span>
+              <ProvisionalNote year={endYear} contextData={contextData} />
+            </div>
+          )}
           {/* Discreet 2019 toggle, below the metadata note (Josh's request). */}
           {activeTab === 'ytd' && cmp2019 && (
             <div className="mt-1 text-[12px] text-gray-400">

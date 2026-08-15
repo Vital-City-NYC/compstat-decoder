@@ -421,6 +421,12 @@ const signedPct = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFix
 
 // "March 1, 2026" — the year matters, because this window restarts every January and the
 // start date moves with it.
+export const formatPeriodDateShort = (iso) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}/${String(d.getUTCFullYear()).slice(-2)}`;
+};
 export const formatPeriodDateFull = (iso) => {
   if (!iso) return null;
   const d = new Date(iso);
