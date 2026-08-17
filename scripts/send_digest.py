@@ -68,7 +68,7 @@ def main():
     # 3. digest + inlined district previews (anchor links inside the email)
     digest = Path(args.digest).read_text()
     previews = sorted(Path(args.previews_dir).glob("district_*.html"))
-    referenced = set(re.findall(r'href="(district_\d+\.html)"', digest))
+    referenced = set(re.findall(r'href="(district_\d+(?:_[a-z]+)?\.html)"', digest))
     inline = [p for p in previews if p.name in referenced][:MAX_INLINE]
     for p in inline:
         digest = digest.replace(f'href="{p.name}"', f'href="#{p.stem}"')
