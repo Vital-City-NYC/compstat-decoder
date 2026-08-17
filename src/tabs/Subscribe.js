@@ -188,7 +188,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [signedUp, setSignedUp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skippedDistrict, setSkippedDistrict] = useState(false);
-  const [vcNews, setVcNews] = useState(false);
+  const [vcNews, setVcNews] = useState(true); // opt-out: newsletter box starts checked (Ted's call, 2026-08-17)
   const [mcState, setMcState] = useState('idle'); // idle | sending | error
   const [mcError, setMcError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
