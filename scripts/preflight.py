@@ -58,9 +58,11 @@ def load_subscribers_mailchimp():
         req.add_header("Authorization", "Basic " + base64.b64encode(f"anystring:{key}".encode()).decode())
         page = json.load(urllib.request.urlopen(req))
         for m in page["members"]:
-            if any(t["name"] == "internal-digest" for t in m.get("tags", [])):
-                continue
             mf = m.get("merge_fields", {})
+            # A reviewer (internal-digest tag) can ALSO be a real subscriber — Anthony is.
+            # Exclude only pure reviewers: tagged AND districtless.
+            if any(t["name"] == "internal-digest" for t in m.get("tags", [])) and mf.get("DISTRICT") in ("", None):
+                continue
             d = mf.get("DISTRICT")
             cadence = str(mf.get("CADENCE") or "monthly").strip().lower() or "monthly"
             rows.append({"Email Address": m["email_address"],
@@ -96,7 +98,7 @@ def main():
     ap.add_argument("--subscribers", default=str(ROOT / "email_preview/subscribers_sample.csv"),
                     help="CSV path, or the word 'mailchimp' for the live audience")
     ap.add_argument("--note", default="", help="extra sentence for the digest header (e.g. send-job status)")
-    ap.add_argument("--cadence", default="monthly", choices=["monthly", "quarterly"])
+    ap.add_argument("--cadence", nargs="+", default=["monthly"], choices=["monthly", "quarterly"])
     ap.add_argument("--out", default=str(ROOT / "email_preview"))
     args = ap.parse_args()
     outdir = Path(args.out)
@@ -118,39 +120,47 @@ def main():
             else load_subscribers(args.subscribers))
     no_district = [x for x in subs if x["DISTRICT"] is None]
     subs = [x for x in subs if x["DISTRICT"] is not None]
-    cycle_subs = [s for s in subs if s["CADENCE"].lower() == args.cadence]
-    by_district = {}
-    for s in cycle_subs:
-        by_district.setdefault(s["DISTRICT"], []).append(s)
+
+    flags = []
+    cadence_blocks = []   # one entry per cadence in this cycle
     other = {}
-    for s in subs:
-        if s["CADENCE"].lower() != args.cadence and s["DISTRICT"] not in by_district:
-            other[s["DISTRICT"]] = other.get(s["DISTRICT"], 0) + 1
+    for x in subs:
+        if x["CADENCE"].lower() not in args.cadence:
+            other[x["DISTRICT"]] = other.get(x["DISTRICT"], 0) + 1
     skipped = [f"{n} ({c} subscriber{'s' if c != 1 else ''})" for n, c in sorted(other.items())]
 
-    # ---- render + vet each district that has subscribers this cycle ----
-    flags = []
-    rendered = {}
-    for n in sorted(by_district):
-        d = council.get(n)
-        if not d:
-            flags.append(("MISSING", f"District {n}: subscribers exist but no crosswalk entry — cannot send"))
-            continue
-        computed = compute_district(d, data, hoods)
-        if len(computed["rows"]) < len(d["precincts"]):
-            missing = len(d["precincts"]) - len(computed["rows"])
-            flags.append(("MISSING", f"District {n}: {missing} of its {len(d['precincts'])} precincts had no computable data"))
-        vet_district(n, computed, flags)
-        html_out = render_district(d, data, hoods, template, args.cadence, computed=computed)
-        dst = outdir / f"district_{n:02d}.html"
-        dst.write_text(html_out)
-        rendered[n] = {"file": dst.name, "subs": len(by_district[n]), "member": d.get("member", "")}
+    for cadence in args.cadence:
+        by_district = {}
+        for x in subs:
+            if x["CADENCE"].lower() == cadence:
+                by_district.setdefault(x["DISTRICT"], []).append(x)
+        rendered = {}
+        for n in sorted(by_district):
+            d = council.get(n)
+            if not d:
+                flags.append(("MISSING", f"District {n} ({cadence}): subscribers exist but no crosswalk entry — cannot send"))
+                continue
+            computed = compute_district(d, data, hoods)
+            if len(computed["rows"]) < len(d["precincts"]):
+                missing = len(d["precincts"]) - len(computed["rows"])
+                flags.append(("MISSING", f"District {n}: {missing} of its {len(d['precincts'])} precincts had no computable data"))
+            vet_district(n, computed, flags)
+            html_out = render_district(d, data, hoods, template, cadence, computed=computed)
+            suffix = "" if cadence == "monthly" else f"_{cadence}"
+            dst = outdir / f"district_{n:02d}{suffix}.html"
+            dst.write_text(html_out)
+            rendered[n] = {"file": dst.name, "subs": len(by_district[n]), "member": d.get("member", "")}
+        cadence_blocks.append({"cadence": cadence, "rendered": rendered,
+                               "subs": sum(v["subs"] for v in rendered.values())})
 
     # ---- the digest ----
     today = datetime.now(timezone.utc).strftime("%A, %B %-d, %Y")
-    total_subs = sum(v["subs"] for v in rendered.values())
     sev_rank = {"IMPOSSIBLE": 0, "STALE": 0, "MISSING": 1, "WILD SWING": 2, "SMALL SAMPLE": 3}
     flags.sort(key=lambda f: sev_rank.get(f[0], 9))
+
+    headline_parts = [f"the {b['cadence']} update goes out to {b['subs']} subscriber{'s' if b['subs'] != 1 else ''} "
+                      f"in {len(b['rendered'])} district{'s' if len(b['rendered']) != 1 else ''}" for b in cadence_blocks]
+    headline = "Tomorrow " + " and ".join(headline_parts)
 
     flag_html = ("".join(
         f'<tr><td style="padding:6px 10px;border-bottom:1px solid #eee;font-weight:700;white-space:nowrap;'
@@ -160,39 +170,45 @@ def main():
         or '<tr><td style="padding:6px 10px;color:#1f7a3a;font-weight:700;">ALL CLEAR</td>'
            '<td style="padding:6px 10px;">Every check passed — nothing needs your eyes.</td></tr>')
 
-    rows_html = "".join(
-        f'<tr><td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;">District {n}'
-        f'{" — " + html.escape(v["member"]) if v["member"] else ""}</td>'
-        f'<td align="right" style="padding:5px 10px;border-bottom:1px solid #f3f4f6;">{v["subs"]}</td>'
-        f'<td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;"><a href="{v["file"]}">preview</a></td></tr>'
-        for n, v in sorted(rendered.items()))
+    sections = ""
+    for b in cadence_blocks:
+        rows_html = "".join(
+            f'<tr><td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;">District {n}'
+            f'{" — " + html.escape(v["member"]) if v["member"] else ""}</td>'
+            f'<td align="right" style="padding:5px 10px;border-bottom:1px solid #f3f4f6;">{v["subs"]}</td>'
+            f'<td style="padding:5px 10px;border-bottom:1px solid #f3f4f6;"><a href="{v["file"]}">preview</a></td></tr>'
+            for n, v in sorted(b["rendered"].items())) or             '<tr><td style="padding:5px 10px;color:#6b7280;" colspan="3">No subscribers this cycle.</td></tr>'
+        sections += f"""
+  <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding:18px 0 6px;">What goes out — {b['cadence']}</div>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <tr><th align="left" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">District</th>
+        <th align="right" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Subscribers</th>
+        <th align="left" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Email</th></tr>
+    {rows_html}
+  </table>"""
 
     digest = f"""<meta charset="utf-8"><title>Pre-flight digest</title>
 <body style="margin:0;background:#f4f4f4;font-family:-apple-system,'Hanken Grotesk',Arial,sans-serif;color:#111;">
 <div style="max-width:640px;margin:24px auto;background:#fff;">
 <div style="background:#000;color:#fff;padding:22px 28px;">
   <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#dde34c;">CompStat Decoder &middot; pre-flight</div>
-  <div style="font-size:21px;font-weight:800;padding-top:6px;">Tomorrow the {args.cadence} update goes out to {total_subs} subscriber{'s' if total_subs != 1 else ''} in {len(rendered)} district{'s' if len(rendered) != 1 else ''}</div>
+  <div style="font-size:21px;font-weight:800;padding-top:6px;">{headline}</div>
   <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today} &middot; NYPD data through {week_end} ({age} days old) &middot; Nothing to do if this looks right &mdash; it sends tomorrow on its own. To STOP it: <a href="https://github.com/Vital-City-NYC/compstat-decoder/issues/new?title=HOLD" style="color:#dde34c;">click here</a> and press the green &ldquo;Submit new issue&rdquo; button on the page that opens &mdash; that posts a stop signal the sender checks first. (Or just tell Ted.)</div>
 </div>
 <div style="padding:20px 28px;">
   <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding-bottom:6px;">Checks</div>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">{flag_html}</table>
-  <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding:18px 0 6px;">What goes out</div>
-  <table style="width:100%;border-collapse:collapse;font-size:13px;">
-    <tr><th align="left" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">District</th>
-        <th align="right" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Subscribers</th>
-        <th align="left" style="padding:5px 10px;border-bottom:2px solid #000;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:#9ca3af;">Email</th></tr>
-    {rows_html}
-  </table>
-  {f'<p style="font-size:12px;color:#6b7280;">Waiting for the {"quarterly" if args.cadence == "monthly" else "monthly"} cycle instead: district {", ".join(skipped)}.</p>' if skipped else ''}
+  {sections}
+  {f'<p style="font-size:12px;color:#6b7280;">Waiting for a cycle not in this run: district {", ".join(skipped)}.</p>' if skipped else ''}
   {f'<p style="font-size:12px;color:#6b7280;">{len(no_district)} subscriber{"s" if len(no_district) != 1 else ""} signed up without picking a district yet — they receive nothing until they do.</p>' if no_district else ''}
   {f'<p style="font-size:12px;color:#8a6d00;font-weight:700;">{html.escape(args.note)}</p>' if args.note else ''}
 </div></div></body>"""
     dst = outdir / "preflight_digest.html"
     dst.write_text(digest)
     print(f"digest: {dst}")
-    print(f"{total_subs} subscribers, {len(rendered)} districts, {len(flags)} flag(s)")
+    for b in cadence_blocks:
+        print(f"{b['cadence']}: {b['subs']} subscribers, {len(b['rendered'])} districts")
+    print(f"{len(flags)} flag(s)")
     for kind, msg in flags:
         print(f"  [{kind}] {msg}")
 

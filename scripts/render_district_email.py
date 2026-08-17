@@ -167,7 +167,7 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         precinct_rows.append(
             "<tr>\n"
             f'  <td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-family:\'Hanken Grotesk\','
-            f'Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#111;">{num_label}{hood}</td>\n'
+            f'Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#111;white-space:nowrap;">{num_label}{hood}</td>\n'
             f'  <td align="right" style="padding:8px 0 8px 10px;border-bottom:1px solid #f3f4f6;'
             f"font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;color:#6b7280;\">"
             f'{round(r["share"] * 100)}%</td>\n'
@@ -208,33 +208,27 @@ def render_district(d, data, hoods, template, cadence, computed=None):
                     pop_sum += pops[pb]
             boro_rate_cache[group] = (cnt / pop_sum * 100000) if pop_sum else None
         return boro_rate_cache[group]
-    rate_rows, foot_notes = [], []
+    rate_rows = []
+    excl_tourist, excl_nopop = [], []
     for r in rows_data:
         num_label = r["key"].replace(" Precinct", " Pct")
         hood = f' <span style="font-weight:400;color:#6b7280;">&middot; {r["hood"].split(",")[0]}</span>' if r["hood"] else ""
         name_cell = (f'<td style="padding:8px 0;border-bottom:1px solid #f3f4f6;font-family:\'Hanken Grotesk\','
-                     f'Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#111;">{num_label}{hood}</td>')
+                     f'Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;color:#111;white-space:nowrap;">{num_label}{hood}</td>')
         count = r["all"]["cur"]
         pop = pops.get(r["key"])
         if r["key"] in TOURIST or not pop:
-            reason = ("its daytime population far exceeds its residents" if r["key"] in TOURIST
-                      else "no population figure is published for it")
-            foot_notes.append(f"the {num_label.replace(' Pct', 'th' if False else ' Pct')}: {reason}")
+            (excl_tourist if r["key"] in TOURIST else excl_nopop).append(r["key"])
             rate_rows.append(f"<tr>{name_cell}{plain_cell(f'{count:,}')}{dash_cell}{dash_cell}{dash_cell}</tr>")
             continue
         rate = count / pop * 100000
-        boro = boro_of.get(int(r["key"].split(chr(116))[0][:-2] if False else re.match(r"([0-9]+)", r["key"]).group(1)))
+        boro = boro_of.get(int(re.match(r"([0-9]+)", r["key"]).group(1)))
         br = boro_rate(boro) if boro else None
         cells = plain_cell(f"{count:,}") + plain_cell(f"{rate:,.0f}")
         cells += vs_cell((rate / br - 1) * 100) if br else dash_cell
         cells += vs_cell((rate / city_rate - 1) * 100)
         rate_rows.append(f"<tr>{name_cell}{cells}</tr>")
-    if foot_notes:
-        foot = ('<p style="font-family:\'Hanken Grotesk\',Arial,Helvetica,sans-serif;font-size:10px;'
-                'line-height:1.6;color:#9ca3af;margin:0 0 6px 0;">Rates use residential population, so no '
-                'comparable rate exists for ' + "; ".join(foot_notes) + ".</p>")
-    else:
-        foot = ""
+    foot = ""
 
     # Straightforward intro for the rates table, in the house data-sentence style.
     comparable = []
@@ -252,11 +246,24 @@ def render_district(d, data, hoods, template, cadence, computed=None):
     boro_groups = {BORO_GROUP.get(c["boro"]) for c in comparable if c["boro"]}
     boro_word = boro_groups.pop() if len(boro_groups) == 1 else "their borough"
     numw = lambda k: NUM_WORD.get(k, str(k))
+    def pct_names(keys):
+        labels = [k.replace(" Precinct", "") for k in keys]
+        return " and ".join(labels) if len(labels) <= 2 else ", ".join(labels[:-1]) + " and " + labels[-1]
+    lead = ""
+    if excl_tourist:
+        n_t = len(excl_tourist)
+        lead += (f"{'One precinct' if n_t == 1 else numw(n_t).capitalize() + ' precincts'} that "
+                 f"overlap{'s' if n_t == 1 else ''} the district (the {pct_names(excl_tourist)}) "
+                 f"draw{'s' if n_t == 1 else ''} so much daytime traffic that crime rates per 100,000 "
+                 f"residents cannot readily be compared with the borough or city. ")
+    if excl_nopop:
+        lead += (f"No population figure is published for the {pct_names(excl_nopop)}, so "
+                 f"{'its' if len(excl_nopop) == 1 else 'their'} rate{'s' if len(excl_nopop) > 1 else ''} "
+                 f"cannot be computed. ")
     if ncmp == 0:
-        rates_intro = ("No comparable per-resident rate exists for this district&rsquo;s precincts. "
-                       f"Citywide, major crime is running at {city_rate:,.0f} incidents per 100,000 residents this year.")
+        rates_intro = (f"{lead}Citywide, major crime is running at {city_rate:,.0f} incidents per 100,000 residents this year.")
     else:
-        prec_word = f"the district&rsquo;s {numw(ncmp)} precinct{'s' if ncmp != 1 else ''}" if ncmp == len(rows_data)             else f"the {numw(ncmp)} precinct{'s' if ncmp != 1 else ''} with comparable rates"
+        prec_word = f"the district&rsquo;s {numw(ncmp)} precinct{'s' if ncmp != 1 else ''}" if ncmp == len(rows_data)             else f"the district&rsquo;s {numw(ncmp)} other precinct{'s' if ncmp != 1 else ''}"
         def phrase(k):
             return "all" if k == ncmp and ncmp > 1 else ("none" if k == 0 else numw(k))
         if below_city == ncmp and below_boro == ncmp:
@@ -266,7 +273,7 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         else:
             finding = (f"Of {prec_word}, {phrase(below_boro)} ha{'s' if below_boro == 1 else 've'} less crime per "
                        f"resident than {boro_word}, and {phrase(below_city)} less than the city as a whole.")
-        rates_intro = (f"{finding} The rates below are total major crimes so far this year per 100,000 residents "
+        rates_intro = (f"{lead}{finding} The rates below are total major crimes so far this year per 100,000 residents "
                        f"&mdash; citywide, that figure is {city_rate:,.0f}.")
 
     member = f" &middot; Council Member {d['member']}" if d.get("member") else ""

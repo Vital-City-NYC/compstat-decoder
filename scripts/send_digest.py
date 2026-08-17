@@ -53,9 +53,9 @@ def main():
     # 1. make sure every reviewer is an audience member carrying the tag
     for email in args.recipients:
         h = hashlib.md5(email.lower().encode()).hexdigest()
+        # upsert without touching fields — a reviewer may also be a real subscriber
         api(key, f"/lists/{LIST_ID}/members/{h}", "PUT",
-            {"email_address": email, "status_if_new": "subscribed", "status": "subscribed",
-             "merge_fields": {"CADENCE": "monthly", "VC_NEWS": "no"}})
+            {"email_address": email, "status_if_new": "subscribed"})
         api(key, f"/lists/{LIST_ID}/members/{h}/tags", "POST",
             {"tags": [{"name": TAG, "status": "active"}]})
 

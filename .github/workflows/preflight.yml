@@ -38,8 +38,9 @@ jobs:
         env:
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
         run: |
-          python3 scripts/preflight.py --subscribers mailchimp \
-            --note "The automated Tuesday send is not switched on yet — nothing goes out unless Ted runs the cycle by hand."
+          M=$(date -u +%m)
+          CADS="monthly"; case "$M" in 01|04|07|10) CADS="monthly quarterly";; esac
+          python3 scripts/preflight.py --subscribers mailchimp --cadence $CADS
 
       - name: Email the digest to the reviewers
         if: env.SKIP != '1'
