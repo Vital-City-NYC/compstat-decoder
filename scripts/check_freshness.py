@@ -15,9 +15,14 @@ above drive the Week and YTD views; the rolling 52-week series in rolling.json
 comes from the CompStat 2.0 timeline API, which publishes a week or so behind
 them. On 8/17 the workbooks carried the week ending 8/16 while the timeline API
 still ended at 8/09, so the site's DEFAULT view (Past year) silently served a
-week-old window while every run stayed green. Divergence for a day or two is
-normal and the Tuesday retry heals it; past that it means the rolling feed has
-stopped and nobody would otherwise notice.
+week-old window while every run stayed green. A lag of up to a week is normal:
+on Monday the workbooks jump to the new week while the API is still on the last
+one, and it catches up within a day or two. More than 8 days means the API has
+missed an entire cycle, which is a real failure nobody would otherwise see.
+
+Do NOT gate this on the workbook age instead: the workbooks advance every Monday,
+so age resets to 1 each week and a permanently dead rolling feed would never trip
+a test written that way.
 """
 import json
 import sys
@@ -25,7 +30,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 MAX_AGE_DAYS = 8
-ROLLING_GRACE_DAYS = 2   # how long the timeline API may lag the workbooks
+MAX_ROLLING_LAG_DAYS = 8   # one full cycle of grace for the timeline API
 
 data = json.load(open(Path(__file__).resolve().parent.parent / "data/latest_compstat.json"))
 week_end = data["citywide"]["report_period"]["week_end"]
@@ -41,7 +46,7 @@ rolling_to = datetime.strptime(rolling["current_to"], "%Y-%m-%d").replace(tzinfo
 workbook_to = datetime.strptime(week_end, "%m/%d/%Y").replace(tzinfo=timezone.utc)
 lag = (workbook_to - rolling_to).days
 print(f"rolling series through {rolling['current_to']}")
-if lag > 0 and age > ROLLING_GRACE_DAYS:
+if lag > MAX_ROLLING_LAG_DAYS:
     sys.exit(f"ROLLING FEED BEHIND: workbooks are through {week_end}, rolling series ends "
              f"{rolling['current_to']}. Re-run scripts/archive_weekly_series.py.")
 print("freshness OK")
