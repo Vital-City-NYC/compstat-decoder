@@ -464,7 +464,10 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
     return { from: dates[0], to: dates[dates.length - 1], located: shootings.located, total: shootings.total };
   }, [shootings]);
 
-  const period = rawData?.citywide?.report_period || {};
+  // The Past year tab swaps rawData for rolling.json, whose entries carry no report_period —
+  // that date lives in the file's top-level _rolling block instead.
+  const period = rawData?.citywide?.report_period
+    || (rawData?._rolling?.current_to ? { week_end: rawData._rolling.current_to } : {});
   const endYear = period?.week_end ? new Date(period.week_end).getFullYear() : new Date().getFullYear();
   const yy = (y) => `’${String(y).slice(-2)}`;
 

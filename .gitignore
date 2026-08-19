@@ -25,3 +25,4 @@ yarn-error.log*
 .mailchimp_key
 JOSH_MIGRATION_QUESTIONS.txt
 MIGRATION_PLAN.txt
+__pycache__/

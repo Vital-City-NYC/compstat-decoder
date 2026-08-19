@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import vcLogo from '../vitalcity-logo.png';
-import { VC, pctColor, dirPct, expandCrime, formatPeriodDate } from '../shared';
+import precinctGeoJSON from '../data/nyc_precincts.json';
+import { VC, pctColor, dirPct, expandCrime, formatPeriodDate, PRECINCT_NEIGHBORHOODS } from '../shared';
 
 /* ------------------------------------------------------------------ */
 /* SUBSCRIBE BAND + EMAIL PREVIEW                                      */
@@ -36,6 +37,15 @@ const pointInGeometry = (pt, geom) => {
 };
 export const districtForPoint = (pt, districts) => districts.find(d => pointInGeometry(pt, d.geometry)) || null;
 
+/* Precincts, for subscribers who want one precinct rather than a whole district.
+   Same point-in-polygon as districts, against the boundary file the maps render. */
+const ordinal = (n) => n + (n % 100 >= 10 && n % 100 <= 20 ? 'th' : ({ 1: 'st', 2: 'nd', 3: 'rd' }[n % 10] || 'th'));
+export const PRECINCTS = precinctGeoJSON.features
+  .map(ft => ({ num: parseInt(ft.properties.precinct, 10), geometry: ft.geometry }))
+  .map(p => ({ ...p, key: `${ordinal(p.num)} Precinct`, hood: PRECINCT_NEIGHBORHOODS[`${ordinal(p.num)} Precinct`] || '' }))
+  .sort((a, b) => a.num - b.num);
+export const precinctForPoint = (pt) => PRECINCTS.find(p => pointInGeometry(pt, p.geometry)) || null;
+
 const CADENCES = ['Quarterly', 'Monthly']; // the product ships these two; Mailchimp's CADENCE field enforces it
 
 /* Mailchimp signup via the audience's public form endpoint — the same IDs every
@@ -45,13 +55,15 @@ const MC_HOST = 'https://vitalcitynyc.us5.list-manage.com';
 const MC_U = '2feddb33cbe9c2118e75fdc1c';
 const MC_ID = 'bf42451be9';
 const MC_F_ID = '0005beedf0'; // the embedded form's id — new-generation lists 404 without it
-const mcSubscribe = ({ email, district, cadence, vcNews }) => new Promise((resolve, reject) => {
+const mcSubscribe = ({ email, district, precinct, cadence, vcNews }) => new Promise((resolve, reject) => {
   const cb = 'mcJsonp' + Math.random().toString(36).slice(2);
   const params = new URLSearchParams({
     u: MC_U, id: MC_ID, f_id: MC_F_ID, EMAIL: email, CADENCE: cadence.toLowerCase(),
     VC_NEWS: vcNews ? 'yes' : 'no', c: cb,
+    GEO_TYPE: precinct != null ? 'precinct' : 'district',
   });
-  if (district != null) params.set('DISTRICT', String(district));
+  if (precinct != null) params.set('PRECINCT', String(precinct));
+  else if (district != null) params.set('DISTRICT', String(district));
   const script = document.createElement('script');
   const cleanup = () => { clearTimeout(timer); delete window[cb]; script.remove(); };
   const timer = setTimeout(() => { cleanup(); reject(new Error('The signup service did not respond — please try again.')); }, 15000);
@@ -189,6 +201,13 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [pickerOpen, setPickerOpen] = useState(false);
   const [skippedDistrict, setSkippedDistrict] = useState(false);
   const [vcNews, setVcNews] = useState(true); // opt-out: newsletter box starts checked (Ted's call, 2026-08-17)
+  // Precinct-only signup (Josh's ask, 2026-08-19). Council district stays the default:
+  // this box starts UNCHECKED, and choosing a precinct REPLACES the district, never adds.
+  const [precinctMode, setPrecinctMode] = useState(false);
+  const [chosenPrecinct, setChosenPrecinct] = useState(null);
+  const [precinctQuery, setPrecinctQuery] = useState('');
+  const [precinctOpen, setPrecinctOpen] = useState(false);
+  const precinctDebounce = useRef(null);
   const [mcState, setMcState] = useState('idle'); // idle | sending | error
   const [mcError, setMcError] = useState('');
   const [showPreview, setShowPreview] = useState(false);
@@ -219,17 +238,41 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
     return () => clearTimeout(debounce.current);
   }, [address, addressMode, districts]);
 
+  // An address typed into the precinct picker resolves the same way the district
+  // lookup does — geocode, then point-in-polygon against the precinct boundaries.
+  useEffect(() => {
+    const q = precinctQuery.trim();
+    if (!precinctMode || q.length < 6 || !/\d/.test(q) || /^\d+$/.test(q)) return undefined;
+    clearTimeout(precinctDebounce.current);
+    precinctDebounce.current = setTimeout(() => {
+      fetch(GEOSEARCH_URL + encodeURIComponent(q))
+        .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then(gj => {
+          for (const ft of gj.features || []) {
+            const hit = precinctForPoint(ft.geometry.coordinates);
+            if (hit) { setChosenPrecinct(hit); setPrecinctQuery(''); setPrecinctOpen(false); break; }
+          }
+        })
+        .catch(() => {});
+    }, 350);
+    return () => clearTimeout(precinctDebounce.current);
+  }, [precinctQuery, precinctMode]);
+
   const finalize = (district) => {
     setMcState('sending'); setMcError('');
-    return mcSubscribe({ email, district, cadence, vcNews })
+    const precinct = precinctMode && chosenPrecinct ? chosenPrecinct.num : null;
+    return mcSubscribe({ email, district: precinct == null ? district : null, precinct, cadence, vcNews })
       .then(() => setMcState('idle'))
       .catch((err) => { setMcState('error'); setMcError(err.message); throw err; });
   };
   const submit = (e) => {
     e.preventDefault();
-    if (!emailOk || (!standalone && !effective) || mcState === 'sending') return;
-    if (standalone) { setSignedUp(true); return; } // the Mailchimp write happens when the district step completes
-    finalize(effective.district).then(() => setSignedUp(true)).catch(() => {});
+    if (!emailOk || mcState === 'sending') return;
+    if (precinctMode && !chosenPrecinct) return;          // the picker is still waiting on a choice
+    if (!precinctMode && !standalone && !effective) return;
+    // A chosen precinct is a complete signup on its own — no district step needed.
+    if (standalone && !(precinctMode && chosenPrecinct)) { setSignedUp(true); return; }
+    finalize(effective ? effective.district : null).then(() => setSignedUp(true)).catch(() => {});
   };
 
   // One combobox: type an address OR a district number / member name, or open it and
@@ -387,10 +430,59 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
           {mcState === 'sending' ? 'Signing up\u2026' : 'Sign up'}
         </button>
       </div>
-      <label className={`flex items-center gap-1.5 text-[12px] text-black/80 cursor-pointer ${compact ? 'mt-1.5' : 'mt-2.5'}`}>
-        <input type="checkbox" checked={vcNews} onChange={(e) => setVcNews(e.target.checked)} />
-        Also send me Vital City&rsquo;s newsletter
-      </label>
+      <div className={`flex flex-wrap items-center gap-x-6 gap-y-1.5 ${compact ? 'mt-1.5' : 'mt-2.5'}`}>
+        <label className="flex items-center gap-1.5 text-[12px] text-black/80 cursor-pointer font-bold">
+          <input type="checkbox" checked={precinctMode}
+            onChange={(e) => { setPrecinctMode(e.target.checked); if (!e.target.checked) { setChosenPrecinct(null); setPrecinctQuery(''); } }} />
+          Send updates on just my police precinct
+        </label>
+        <label className="flex items-center gap-1.5 text-[12px] text-black/80 cursor-pointer">
+          <input type="checkbox" checked={vcNews} onChange={(e) => setVcNews(e.target.checked)} />
+          Also send me Vital City&rsquo;s newsletter
+        </label>
+      </div>
+      {precinctMode && (
+        <div className="mt-3.5 pt-3.5 border-t border-black/20 max-w-[360px] relative">
+          <div className="text-[11px] font-black uppercase tracking-widest text-black mb-1.5">Pick a precinct</div>
+          {chosenPrecinct ? (
+            <div className="text-[13px] text-black">
+              <span className="font-black">{chosenPrecinct.key}</span>
+              {chosenPrecinct.hood ? ` \u00b7 ${chosenPrecinct.hood}` : ''}{' '}
+              <button type="button" className="underline font-bold text-[12px] hover:opacity-70"
+                onClick={() => { setChosenPrecinct(null); setPrecinctOpen(true); }}>change</button>
+            </div>
+          ) : (<>
+            <input type="text" value={precinctQuery}
+              onChange={(e) => { setPrecinctQuery(e.target.value); setPrecinctOpen(true); }}
+              onFocus={() => setPrecinctOpen(true)}
+              onBlur={() => setTimeout(() => setPrecinctOpen(false), 150)}
+              placeholder="Enter address, precinct number, or neighborhood"
+              className="w-full border border-gray-800 bg-white px-3 py-2 text-[13px] focus:outline-none" />
+            {precinctOpen && (
+              <div className="absolute z-20 left-0 right-0 bg-white border border-gray-800 border-t-0 max-h-52 overflow-y-auto">
+                {(() => {
+                  const q = precinctQuery.trim().toLowerCase();
+                  const digits = q.replace(/\D/g, '');
+                  // A query with digits is a precinct number; anything else is a place name.
+                  const list = !q ? PRECINCTS
+                    : digits ? PRECINCTS.filter(pr => String(pr.num).startsWith(digits))
+                    : PRECINCTS.filter(pr => pr.hood.toLowerCase().includes(q));
+                  if (!list.length) return <div className="px-3 py-2 text-[11px] text-black/60">No match &mdash; keep typing, or enter your address.</div>;
+                  return list.map(pr => (
+                    <button key={pr.num} type="button"
+                      onMouseDown={() => { setChosenPrecinct(pr); setPrecinctQuery(''); setPrecinctOpen(false); }}
+                      className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-black/5 flex justify-between gap-3">
+                      <span className="font-bold">{pr.key}</span>
+                      <span className="text-black/55">{pr.hood}</span>
+                    </button>
+                  ));
+                })()}
+              </div>
+            )}
+            <p className="text-[11px] text-black/60 mt-1.5">All 78 precincts.</p>
+          </>)}
+        </div>
+      )}
       {mcState === 'error' && (
         <p className="text-[12px] font-bold mt-1.5" style={{ color: '#c0392b' }}>{mcError}</p>
       )}

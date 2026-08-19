@@ -35,7 +35,8 @@ CRIME_EXPAND = {
 }
 NUM_WORD = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five",
             6: "six", 7: "seven", 8: "eight", 9: "nine"}
-GREEN, RED, GRAY = "#1f7a3a", "#c0392b", "#6b7280"
+# Goodest Green / Baddest Red from the Vital City brand guide's data-visualization palette.
+GREEN, RED, GRAY = "#57aa4a", "#d2232a", "#6b7280"
 SITE = "https://vital-city-nyc.github.io/compstat-decoder/"
 
 def ordinal(n):
@@ -137,12 +138,10 @@ def render_district(d, data, hoods, template, cadence, computed=None):
     c = computed or compute_district(d, data, hoods)
     rows_data, w, driver = c["rows"], c["weighted"], c["driver"]
     down = sum(1 for r in rows_data if (r["all"]["pct"] or 0) < 0)
+    up = sum(1 for r in rows_data if (r["all"]["pct"] or 0) > 0)
     total = len(rows_data)
-    if down * 2 >= total:
-        headline = f"Year-to-date, crime is down in {down} of the {total} precincts that make up your district"
-    else:
-        up = sum(1 for r in rows_data if (r["all"]["pct"] or 0) > 0)
-        headline = f"Year-to-date, crime is up in {up} of the {total} precincts that make up your district"
+    direction, changed = ("down", down) if down * 2 >= total else ("up", up)
+    headline = f"Year-to-date, crime is {direction} in {changed} of the {total} precincts in your council district."
 
     week_end = data["citywide"]["report_period"]["week_end"]
     through = datetime.strptime(week_end, "%m/%d/%Y").strftime("%B %-d, %Y")
@@ -151,14 +150,17 @@ def render_district(d, data, hoods, template, cadence, computed=None):
           [("all", MAJORS), ("violent", MAJOR_VIOLENT), ("property", MAJOR_PROPERTY)]}
 
     count_word = NUM_WORD.get(total, str(total))
+    changed_word = NUM_WORD.get(changed, str(changed))
     if driver:
         dlabel, _ = dir_pct(driver["pct"])
-        driver_clause = (f", with the biggest single factor being {CRIME_EXPAND[driver['name']]}, "
-                         f"{dlabel.lower()} on average across the district&rsquo;s precincts")
+        driver_sentence = (f" The biggest single factor is {CRIME_EXPAND[driver['name']]}, "
+                           f"{dlabel.lower()} on average across the district&rsquo;s precincts.")
     else:
-        driver_clause = ""
-    intro = (f"NYPD reports crime by police precinct, and {count_word} precinct{'s' if total != 1 else ''} "
-             f"overlap{'s' if total == 1 else ''} Council District {n}. Here is how each is trending{driver_clause}.")
+        driver_sentence = ""
+    intro = (f"NYPD released data on criminal complaints through {through}. "
+             f"The department reports crime by police precinct, and in the {count_word} precinct{'s' if total != 1 else ''} "
+             f"that overlap{'s' if total == 1 else ''} Council District {n}, crime is {direction} in {changed_word}."
+             f"{driver_sentence}")
 
     precinct_rows = []
     for r in rows_data:
@@ -181,7 +183,7 @@ def render_district(d, data, hoods, template, cadence, computed=None):
     vs_cell = lambda v: (
         f'<td align="right" style="padding:8px 0 8px 10px;border-bottom:1px solid #f3f4f6;'
         f"font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;font-weight:700;"
-        f'white-space:nowrap;color:{"#c0392b" if v > 0 else "#1f7a3a"};">{"+" if v > 0 else "&minus;"}{abs(round(v))}%</td>')
+        f'white-space:nowrap;color:{RED if v > 0 else GREEN};">{"+" if v > 0 else "&minus;"}{abs(round(v))}%</td>')
     dash_cell = ('<td align="right" style="padding:8px 0 8px 10px;border-bottom:1px solid #f3f4f6;'
                  "font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;color:#9ca3af;\">&mdash;</td>")
     plain_cell = lambda txt: (
@@ -260,8 +262,9 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         lead += (f"No population figure is published for the {pct_names(excl_nopop)}, so "
                  f"{'its' if len(excl_nopop) == 1 else 'their'} rate{'s' if len(excl_nopop) > 1 else ''} "
                  f"cannot be computed. ")
+    citywide_rate_sentence = f"Citywide, the rate of total major crimes is {city_rate:,.0f} per 100,000 residents, year-to-date."
     if ncmp == 0:
-        rates_intro = (f"{lead}Citywide, major crime is running at {city_rate:,.0f} incidents per 100,000 residents this year.")
+        rates_intro = f"{lead}{citywide_rate_sentence}"
     else:
         prec_word = f"the district&rsquo;s {numw(ncmp)} precinct{'s' if ncmp != 1 else ''}" if ncmp == len(rows_data)             else f"the district&rsquo;s {numw(ncmp)} other precinct{'s' if ncmp != 1 else ''}"
         def phrase(k):
@@ -273,11 +276,12 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         else:
             finding = (f"Of {prec_word}, {phrase(below_boro)} ha{'s' if below_boro == 1 else 've'} less crime per "
                        f"resident than {boro_word}, and {phrase(below_city)} less than the city as a whole.")
-        rates_intro = (f"{lead}{finding} The rates below are total major crimes so far this year per 100,000 residents "
-                       f"&mdash; citywide, that figure is {city_rate:,.0f}.")
+        rates_intro = f"{lead}{finding} {citywide_rate_sentence}"
 
     member = f" &middot; Council Member {d['member']}" if d.get("member") else ""
-    link = f"{SITE}?tab=council&district={n}"
+    # range=ytd: the emailed numbers are year-to-date, so the deep link has to land on the
+    # same view — the site otherwise defaults to the Past year (rolling 52-week) tab.
+    link = f"{SITE}?tab=council&district={n}&range=ytd"
     out = template
     for token, value in {
         "{{DISTRICT}}": str(n),
@@ -300,7 +304,6 @@ def render_district(d, data, hoods, template, cadence, computed=None):
         "{{RATES_INTRO}}": rates_intro,
         "{{RATE_ROWS}}": "\n".join(rate_rows),
         "{{RATE_FOOTNOTE}}": foot,
-        "{{WEEK_END}}": through,
     }.items():
         out = out.replace(token, value)
     leftover = re.findall(r"\{\{[A-Z_]+\}\}", out)

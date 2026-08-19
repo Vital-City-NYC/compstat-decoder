@@ -23,7 +23,8 @@ import urllib.request
 from datetime import datetime, timezone
 
 from preflight import load_subscribers_mailchimp
-from render_district_email import ROOT, compute_district, neighborhoods, render_district
+from render_district_email import ROOT, compute_district, neighborhoods, ordinal, render_district
+from render_precinct_email import compute_precinct, render_precinct
 
 LIST_ID = "bf42451be9"
 REPO = "Vital-City-NYC/compstat-decoder"
@@ -59,22 +60,60 @@ def main():
         print("HOLD issue is open — standing down, nothing sent.")
         return
 
-    subs = [s for s in load_subscribers_mailchimp()
-            if s["CADENCE"] == args.cadence and s["DISTRICT"] is not None]
-    by_district = {}
-    for s in subs:
-        by_district.setdefault(s["DISTRICT"], []).append(s["Email Address"])
-    if not by_district:
-        print(f"no {args.cadence} subscribers with districts — nothing to send")
+    everyone = [s for s in load_subscribers_mailchimp() if s["CADENCE"] == args.cadence]
+    by_district, by_precinct = {}, {}
+    for s in everyone:
+        # GEO_TYPE decides which email a subscriber gets; precinct replaces district,
+        # it never adds to it, so nobody can land in both buckets.
+        if s.get("GEO_TYPE") == "precinct" and s.get("PRECINCT") is not None:
+            by_precinct.setdefault(s["PRECINCT"], []).append(s["Email Address"])
+        elif s["DISTRICT"] is not None:
+            by_district.setdefault(s["DISTRICT"], []).append(s["Email Address"])
+    if not by_district and not by_precinct:
+        print(f"no {args.cadence} subscribers with a geography — nothing to send")
         return
 
     data = json.load(open(ROOT / "data/latest_compstat.json"))
     council = {d["district"]: d for d in json.load(open(ROOT / "src/data/council_districts.json"))["districts"]}
     hoods = neighborhoods()
     template = (ROOT / "scripts/email_template.html").read_text()
+    ptemplate = (ROOT / "scripts/precinct_email_template.html").read_text()
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    def deliver(slug, subject, preview, html, emails):
+        seg = api(key, f"/lists/{LIST_ID}/segments", "POST",
+                  {"name": f"send-{args.cadence}-{slug}-{stamp}", "static_segment": emails})
+        camp = api(key, "/campaigns", "POST", {
+            "type": "regular",
+            "recipients": {"list_id": LIST_ID, "segment_opts": {"saved_segment_id": seg["id"]}},
+            "settings": {"subject_line": subject,
+                         "preview_text": preview,
+                         "title": f"decoder-{args.cadence}-{slug}-{stamp}",
+                         "from_name": "Vital City",
+                         "reply_to": "info@vitalcitynyc.org",
+                         "auto_footer": False}})
+        api(key, f"/campaigns/{camp['id']}/content", "PUT", {"html": html})
+        api(key, f"/campaigns/{camp['id']}/actions/send", "POST")
+        return camp["id"]
+
     sent = 0
+    for num, emails in sorted(by_precinct.items()):
+        key_name = f"{ordinal(num)} Precinct"
+        try:
+            pcomputed = compute_precinct(key_name, data)
+        except RuntimeError as e:
+            print(f"  SKIP {key_name}: {e} ({len(emails)} subscriber(s) unreached)")
+            continue
+        phtml = render_precinct(key_name, data, hoods, ptemplate, args.cadence, computed=pcomputed)
+        if args.dry_run:
+            print(f"  DRY RUN {key_name}: would send to {len(emails)} subscriber(s)")
+            continue
+        cid = deliver(f"p{num}", f"Crime in the {key_name}: your {args.cadence} update",
+                      "How each major offense in your precinct is trending, from the NYPD's own data.",
+                      phtml, emails)
+        print(f"  sent {key_name} to {len(emails)} subscriber(s) — campaign {cid}")
+        sent += 1
+
     for n, emails in sorted(by_district.items()):
         d = council.get(n)
         if not d:
@@ -84,22 +123,13 @@ def main():
         if args.dry_run:
             print(f"  DRY RUN district {n}: would send to {len(emails)} subscriber(s)")
             continue
-        seg = api(key, f"/lists/{LIST_ID}/segments", "POST",
-                  {"name": f"send-{args.cadence}-d{n}-{stamp}", "static_segment": emails})
-        camp = api(key, "/campaigns", "POST", {
-            "type": "regular",
-            "recipients": {"list_id": LIST_ID, "segment_opts": {"saved_segment_id": seg["id"]}},
-            "settings": {"subject_line": f"Crime in Council District {n}: your {args.cadence} update",
-                         "preview_text": "How each precinct in your district is trending, from the NYPD's own data.",
-                         "title": f"decoder-{args.cadence}-d{n}-{stamp}",
-                         "from_name": "Vital City",
-                         "reply_to": "info@vitalcitynyc.org",
-                         "auto_footer": False}})
-        api(key, f"/campaigns/{camp['id']}/content", "PUT", {"html": html})
-        api(key, f"/campaigns/{camp['id']}/actions/send", "POST")
-        print(f"  sent district {n} to {len(emails)} subscriber(s) — campaign {camp['id']}")
+        cid = deliver(f"d{n}", f"Crime in Council District {n}: your {args.cadence} update",
+                      "How each precinct in your district is trending, from the NYPD's own data.",
+                      html, emails)
+        print(f"  sent district {n} to {len(emails)} subscriber(s) — campaign {cid}")
         sent += 1
-    print(f"cycle complete: {sent} district campaign(s), {sum(len(e) for e in by_district.values())} subscriber(s)")
+    total = sum(len(e) for e in by_district.values()) + sum(len(e) for e in by_precinct.values())
+    print(f"cycle complete: {sent} campaign(s), {total} subscriber(s)")
 
 if __name__ == "__main__":
     main()
