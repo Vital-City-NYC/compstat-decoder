@@ -9,6 +9,15 @@ CompStat weeks end Sunday and the NYPD posts the workbooks on Mondays, so on any
 given day the citywide week_end should be at most ~7 days old. Anything past
 MAX_AGE_DAYS means either the NYPD is late (the Tuesday retry will usually heal
 it) or the pipeline is broken (a red run + alarm issue is exactly right).
+
+SECOND GUARD, added 2026-08-19: the site reads TWO NYPD sources. The workbooks
+above drive the Week and YTD views; the rolling 52-week series in rolling.json
+comes from the CompStat 2.0 timeline API, which publishes a week or so behind
+them. On 8/17 the workbooks carried the week ending 8/16 while the timeline API
+still ended at 8/09, so the site's DEFAULT view (Past year) silently served a
+week-old window while every run stayed green. Divergence for a day or two is
+normal and the Tuesday retry heals it; past that it means the rolling feed has
+stopped and nobody would otherwise notice.
 """
 import json
 import sys
@@ -16,6 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 MAX_AGE_DAYS = 8
+ROLLING_GRACE_DAYS = 2   # how long the timeline API may lag the workbooks
 
 data = json.load(open(Path(__file__).resolve().parent.parent / "data/latest_compstat.json"))
 week_end = data["citywide"]["report_period"]["week_end"]
@@ -24,4 +34,17 @@ print(f"citywide data through {week_end} ({age} days old)")
 if age > MAX_AGE_DAYS:
     sys.exit(f"STALE FEED: newest CompStat week ended {week_end}, {age} days ago "
              f"(limit {MAX_AGE_DAYS}). The NYPD has not posted, or the scrape is not landing.")
+# --- the rolling feed must catch up to the workbooks ---
+root = Path(__file__).resolve().parent.parent
+rolling = json.load(open(root / "data/rolling.json"))["_rolling"]
+rolling_to = datetime.strptime(rolling["current_to"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+workbook_to = datetime.strptime(week_end, "%m/%d/%Y").replace(tzinfo=timezone.utc)
+lag = (workbook_to - rolling_to).days
+print(f"rolling 52-week window ends {rolling['current_to']} ({lag} day(s) behind the workbooks)")
+if lag > 0 and age > ROLLING_GRACE_DAYS:
+    sys.exit(f"STALE ROLLING FEED: the workbooks cover the week ending {week_end} but the rolling "
+             f"series still ends {rolling['current_to']}, {lag} day(s) behind, and the workbook week "
+             f"is already {age} days old. The Past year view is the site default, so this is what "
+             f"visitors see. Re-run scripts/archive_weekly_series.py; if it adds +0 observations the "
+             f"CompStat 2.0 timeline API has not published that week yet.")
 print("freshness OK")
