@@ -6,8 +6,13 @@ name: Update CompStat data
 # NYPD changed something; read the log before overriding it.
 on:
   schedule:
-    - cron: '0 16 * * 1'   # Mondays 12pm ET / 11am EST, after the NYPD posts
-    - cron: '0 16 * * 2'   # Tuesday retry — heals a late NYPD posting on its own
+    - cron: '0 18 * * 1'   # Mondays 2pm ET / 1pm EST. The NYPD posted at ~12:45 ET on
+                           # 2026-08-17 and the old noon slot missed it, so the digest an
+                           # hour later would have been built on the previous week.
+    - cron: '0 14 * * 2'   # Tuesday retry, 10am ET — deliberately TWO HOURS BEFORE the
+                           # send job, which runs at 16:00 UTC. They used to share the
+                           # 16:00 slot, so a retry could rewrite data/ while the send
+                           # was rendering from it.
   workflow_dispatch:
     inputs:
       test_alarm:

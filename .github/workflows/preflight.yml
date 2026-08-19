@@ -7,7 +7,7 @@ name: Pre-flight digest
 
 on:
   schedule:
-    - cron: '0 18 * * 1'   # Mondays 2pm ET / 1pm EST
+    - cron: '0 19 * * 1'   # Mondays 3pm ET / 2pm EST, an hour after the scrape lands
   workflow_dispatch:
 
 permissions:
