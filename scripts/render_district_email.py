@@ -150,7 +150,9 @@ def render_district(d, data, hoods, template, cadence, computed=None):
           [("all", MAJORS), ("violent", MAJOR_VIOLENT), ("property", MAJOR_PROPERTY)]}
 
     count_word = NUM_WORD.get(total, str(total))
-    changed_word = NUM_WORD.get(changed, str(changed))
+    # "crime is down in four" reads oddly when four is also the total — say "all four"
+    changed_word = ("all " + count_word if changed == total
+                    else NUM_WORD.get(changed, str(changed)))
     if driver:
         dlabel, _ = dir_pct(driver["pct"])
         driver_sentence = (f" The biggest single factor is {CRIME_EXPAND[driver['name']]}, "
