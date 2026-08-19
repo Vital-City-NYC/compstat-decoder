@@ -45,6 +45,8 @@ export const PRECINCTS = precinctGeoJSON.features
   .map(p => ({ ...p, key: `${ordinal(p.num)} Precinct`, hood: PRECINCT_NEIGHBORHOODS[`${ordinal(p.num)} Precinct`] || '' }))
   .sort((a, b) => a.num - b.num);
 export const precinctForPoint = (pt) => PRECINCTS.find(p => pointInGeometry(pt, p.geometry)) || null;
+/* A bare number is a precinct; a number followed by words is a street address. */
+const isAddressish = (q) => /\d/.test(q) && /[a-z]/i.test(q) && q.trim().length >= 5;
 
 const CADENCES = ['Quarterly', 'Monthly']; // the product ships these two; Mailchimp's CADENCE field enforces it
 
@@ -216,6 +218,8 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [chosenPrecinct, setChosenPrecinct] = useState(null);
   const [precinctQuery, setPrecinctQuery] = useState('');
   const [precinctOpen, setPrecinctOpen] = useState(false);
+  const [precinctHits, setPrecinctHits] = useState([]);   // [{ label, precinct }]
+  const [precinctLookup, setPrecinctLookup] = useState('idle');
   const precinctDebounce = useRef(null);
   const [mcState, setMcState] = useState('idle'); // idle | sending | error
   const [mcError, setMcError] = useState('');
@@ -247,22 +251,31 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
     return () => clearTimeout(debounce.current);
   }, [address, addressMode, districts]);
 
-  // An address typed into the precinct picker resolves the same way the district
-  // lookup does — geocode, then point-in-polygon against the precinct boundaries.
+  // An address typed into the precinct picker is OFFERED as a list of matching
+  // addresses to choose from. It is never resolved for you: a house number alone
+  // matches half of Brooklyn, so picking the first hit would be a guess.
   useEffect(() => {
     const q = precinctQuery.trim();
-    if (!precinctMode || q.length < 6 || !/\d/.test(q) || /^\d+$/.test(q)) return undefined;
+    if (!precinctMode || !isAddressish(q)) { setPrecinctHits([]); setPrecinctLookup('idle'); return undefined; }
+    setPrecinctLookup('searching');
     clearTimeout(precinctDebounce.current);
     precinctDebounce.current = setTimeout(() => {
       fetch(GEOSEARCH_URL + encodeURIComponent(q))
         .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
         .then(gj => {
+          const seen = new Set();
+          const hits = [];
           for (const ft of gj.features || []) {
-            const hit = precinctForPoint(ft.geometry.coordinates);
-            if (hit) { setChosenPrecinct(hit); setPrecinctQuery(''); setPrecinctOpen(false); break; }
+            const pr = precinctForPoint(ft.geometry.coordinates);
+            const label = ft.properties?.label || '';
+            if (!pr || !label || seen.has(label)) continue;
+            seen.add(label);
+            hits.push({ label, precinct: pr });
+            if (hits.length >= 6) break;
           }
+          setPrecinctHits(hits); setPrecinctLookup('done');
         })
-        .catch(() => {});
+        .catch(() => { setPrecinctHits([]); setPrecinctLookup('done'); });
     }, 350);
     return () => clearTimeout(precinctDebounce.current);
   }, [precinctQuery, precinctMode]);
@@ -470,16 +483,35 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             {precinctOpen && (
               <div className="absolute z-20 left-0 right-0 bg-white border border-gray-800 border-t-0 max-h-52 overflow-y-auto">
                 {(() => {
-                  const q = precinctQuery.trim().toLowerCase();
+                  const raw = precinctQuery.trim();
+                  const q = raw.toLowerCase();
+                  const choose = (pr) => { setChosenPrecinct(pr); setPrecinctQuery(''); setPrecinctOpen(false); setPrecinctHits([]); };
+
+                  // An address query offers the matching addresses to pick from.
+                  if (isAddressish(raw)) {
+                    if (precinctLookup === 'searching' && !precinctHits.length) {
+                      return <div className="px-3 py-2 text-[11px] text-black/60">Looking up address&hellip;</div>;
+                    }
+                    if (!precinctHits.length) {
+                      return <div className="px-3 py-2 text-[11px] text-black/60">No NYC address found yet &mdash; keep typing.</div>;
+                    }
+                    return precinctHits.map(h => (
+                      <button key={h.label} type="button" onMouseDown={() => choose(h.precinct)}
+                        className="w-full text-left px-3 py-2 text-[12px] hover:bg-black/5 border-b border-gray-100 last:border-b-0">
+                        <div className="font-bold">{h.label}</div>
+                        <div className="text-black/55">{h.precinct.key}{h.precinct.hood ? ` \u00b7 ${h.precinct.hood}` : ''}</div>
+                      </button>
+                    ));
+                  }
+
+                  // Otherwise: a bare number is a precinct, words are a neighbourhood.
                   const digits = q.replace(/\D/g, '');
-                  // A query with digits is a precinct number; anything else is a place name.
                   const list = !q ? PRECINCTS
                     : digits ? PRECINCTS.filter(pr => String(pr.num).startsWith(digits))
                     : PRECINCTS.filter(pr => pr.hood.toLowerCase().includes(q));
                   if (!list.length) return <div className="px-3 py-2 text-[11px] text-black/60">No match &mdash; keep typing, or enter your address.</div>;
                   return list.map(pr => (
-                    <button key={pr.num} type="button"
-                      onMouseDown={() => { setChosenPrecinct(pr); setPrecinctQuery(''); setPrecinctOpen(false); }}
+                    <button key={pr.num} type="button" onMouseDown={() => choose(pr)}
                       className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-black/5 flex justify-between gap-3">
                       <span className="font-bold">{pr.key}</span>
                       <span className="text-black/55">{pr.hood}</span>
@@ -488,7 +520,6 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
                 })()}
               </div>
             )}
-            <p className="text-[11px] text-black/60 mt-1.5">All 78 precincts.</p>
           </>)}
         </div>
       )}

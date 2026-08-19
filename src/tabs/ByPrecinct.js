@@ -65,8 +65,12 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
           <pattern id="tourist-hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <line x1="0" y1="0" x2="0" y2="6" stroke="#1f2937" strokeOpacity="0.5" strokeWidth="1" />
           </pattern>
-          <pattern id="park-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <line x1="0" y1="0" x2="0" y2="4" stroke="#3d6b47" strokeOpacity="0.45" strokeWidth="0.9" />
+          {/* Parks are stippled, tourist hubs striped. Both were 45-degree hatches and
+              read as the same texture at map scale; only the two marks being different
+              in KIND tells them apart. */}
+          <pattern id="park-stipple" width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="1.25" cy="1.25" r="0.85" fill="#3d6b47" fillOpacity="0.55" />
+            <circle cx="3.75" cy="3.75" r="0.85" fill="#3d6b47" fillOpacity="0.55" />
           </pattern>
         </defs>
         {[...precinctGeoJSON.features]
@@ -106,7 +110,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
         {/* Major parks: texture only — nobody lives there, and their acreage visually
             inflates the precincts they sit in. Non-interactive by design. */}
         {bigParks.features.map((f, i) => (
-          <path key={`park-${i}`} d={pathFn(f)} fill="url(#park-hatch)"
+          <path key={`park-${i}`} d={pathFn(f)} fill="url(#park-stipple)"
             stroke="#3d6b47" strokeOpacity="0.35" strokeWidth="0.5" pointerEvents="none" />
         ))}
       </svg>
@@ -164,7 +168,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
           </>
         )}
         <span className="ml-3 pl-3 border-l border-gray-300 flex items-center gap-1" title="Major parks (400+ acres) are textured: nobody lives there, so they add area but not crime rate.">
-          <span className="inline-block w-3 h-3" style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(61,107,71,0.5) 2px, rgba(61,107,71,0.5) 3px)' }} />
+          <span className="inline-block w-3 h-3" style={{ backgroundImage: 'radial-gradient(rgba(61,107,71,0.8) 0.85px, transparent 0.9px)', backgroundSize: '3px 3px' }} />
           Major parks
         </span>
         <span className="ml-3 pl-3 border-l border-gray-300 flex items-center gap-1" title="Tourist/commercial precincts: per-100k rates use residential population only and are not comparable. % change is not distorted.">
