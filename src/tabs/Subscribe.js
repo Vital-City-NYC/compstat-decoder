@@ -54,16 +54,25 @@ const CADENCES = ['Quarterly', 'Monthly']; // the product ships these two; Mailc
 const MC_HOST = 'https://vitalcitynyc.us5.list-manage.com';
 const MC_U = '2feddb33cbe9c2118e75fdc1c';
 const MC_ID = 'bf42451be9';
-const MC_F_ID = '0005beedf0'; // the embedded form's id — new-generation lists 404 without it
+// NO f_id. It was added because this list once 404'd without it, but the embedded
+// form it points at only carries EMAIL and CADENCE — and post-json silently DROPS
+// every merge field the named form omits, which is how DISTRICT/GEO_TYPE/PRECINCT
+// were being thrown away. Probed both ways 2026-08-19: without f_id all five fields
+// land; with it, only CADENCE does. Do not reintroduce it without re-probing.
 const mcSubscribe = ({ email, district, precinct, cadence, vcNews }) => new Promise((resolve, reject) => {
   const cb = 'mcJsonp' + Math.random().toString(36).slice(2);
   const params = new URLSearchParams({
-    u: MC_U, id: MC_ID, f_id: MC_F_ID, EMAIL: email, CADENCE: cadence.toLowerCase(),
+    u: MC_U, id: MC_ID, EMAIL: email, CADENCE: cadence.toLowerCase(),
     VC_NEWS: vcNews ? 'yes' : 'no', c: cb,
     GEO_TYPE: precinct != null ? 'precinct' : 'district',
   });
   if (precinct != null) params.set('PRECINCT', String(precinct));
-  else if (district != null) params.set('DISTRICT', String(district));
+  // Send DISTRICT too whenever we know it, even in precinct mode. GEO_TYPE is what
+  // the send job reads, so this changes nothing normally — but Mailchimp's form
+  // endpoint silently drops merge fields that aren't enabled on the embedded form,
+  // and if that ever happens again this leaves the subscriber on the district list
+  // rather than on no list at all.
+  if (district != null) params.set('DISTRICT', String(district));
   const script = document.createElement('script');
   const cleanup = () => { clearTimeout(timer); delete window[cb]; script.remove(); };
   const timer = setTimeout(() => { cleanup(); reject(new Error('The signup service did not respond — please try again.')); }, 15000);
@@ -261,7 +270,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const finalize = (district) => {
     setMcState('sending'); setMcError('');
     const precinct = precinctMode && chosenPrecinct ? chosenPrecinct.num : null;
-    return mcSubscribe({ email, district: precinct == null ? district : null, precinct, cadence, vcNews })
+    return mcSubscribe({ email, district, precinct, cadence, vcNews })
       .then(() => setMcState('idle'))
       .catch((err) => { setMcState('error'); setMcError(err.message); throw err; });
   };
