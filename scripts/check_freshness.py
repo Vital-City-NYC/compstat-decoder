@@ -40,11 +40,8 @@ rolling = json.load(open(root / "data/rolling.json"))["_rolling"]
 rolling_to = datetime.strptime(rolling["current_to"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
 workbook_to = datetime.strptime(week_end, "%m/%d/%Y").replace(tzinfo=timezone.utc)
 lag = (workbook_to - rolling_to).days
-print(f"rolling 52-week window ends {rolling['current_to']} ({lag} day(s) behind the workbooks)")
+print(f"rolling series through {rolling['current_to']}")
 if lag > 0 and age > ROLLING_GRACE_DAYS:
-    sys.exit(f"STALE ROLLING FEED: the workbooks cover the week ending {week_end} but the rolling "
-             f"series still ends {rolling['current_to']}, {lag} day(s) behind, and the workbook week "
-             f"is already {age} days old. The Past year view is the site default, so this is what "
-             f"visitors see. Re-run scripts/archive_weekly_series.py; if it adds +0 observations the "
-             f"CompStat 2.0 timeline API has not published that week yet.")
+    sys.exit(f"ROLLING FEED BEHIND: workbooks are through {week_end}, rolling series ends "
+             f"{rolling['current_to']}. Re-run scripts/archive_weekly_series.py.")
 print("freshness OK")
