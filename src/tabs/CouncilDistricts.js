@@ -8,8 +8,7 @@ import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
   safeNum, pctColor, dirPct, signedCount, expandCrime,
   toOrdinalPrecinct, SearchIcon, ChevronDown, Download,
-  ytdVolatility, volatilitySentence, VOLATILITY_LABEL,
-} from '../shared';
+  ytdVolatility, volatilitySentence, VOLATILITY_LABEL, useSettled } from '../shared';
 
 const MAJORS = ['Murder', 'Rape', 'Robbery', 'Fel. Assault', 'Burglary', 'Gr. Larceny', 'G.L.A.'];
 
@@ -325,6 +324,7 @@ const DistrictMap = ({ district, onSelectPrecinct, shootings, showShootings, set
 const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const querySettled = useSettled(query);
 
   const results = useMemo(() => {
     const q = query.toLowerCase().trim();
@@ -350,7 +350,7 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
           className="w-full text-[14px] font-bold py-2 pl-8 pr-2 rounded border bg-white focus:outline-none border-[#ff7c53]"
         />
         <div className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-200 shadow-xl rounded z-50 max-h-80 overflow-y-auto">
-          {results.length === 0 && <div className="px-3 py-3 text-sm text-gray-500">No matches.</div>}
+          {results.length === 0 && querySettled && <div className="px-3 py-3 text-sm text-gray-500">No matches.</div>}
           {results.map(d => (
             <button
               key={d.district}
@@ -412,6 +412,7 @@ function DistrictChooser({ districts, setDistrictNum }) {
     }, 350);
     return () => clearTimeout(debounce.current);
   }, [q, districts]);
+  const settled = useSettled(q);
   return (
     <div className="max-w-xl">
       <div className="bg-gray-50 rounded-sm border border-gray-200 p-5">
@@ -437,7 +438,9 @@ function DistrictChooser({ districts, setDistrictNum }) {
               {d.member && <span className="text-[13px] text-gray-500"> — {d.member}</span>}
             </button>
           ))}
-          {matches.length === 0 && <div className="px-3 py-3 text-[13px] text-gray-500">No match — try a number 1&ndash;51 or a member&rsquo;s name.</div>}
+          {matches.length === 0 && !suggestion && lookupState !== 'searching' && settled && (
+            <div className="px-3 py-3 text-[13px] text-gray-500">No match — try a number 1&ndash;51 or a member&rsquo;s name.</div>
+          )}
         </div>
       </div>
     </div>

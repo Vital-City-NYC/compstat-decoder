@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import vcLogo from '../vitalcity-logo.png';
 import precinctGeoJSON from '../data/nyc_precincts.json';
-import { VC, pctColor, dirPct, expandCrime, formatPeriodDate, PRECINCT_NEIGHBORHOODS } from '../shared';
+import { VC, pctColor, dirPct, expandCrime, formatPeriodDate, PRECINCT_NEIGHBORHOODS, useSettled} from '../shared';
 
 /* ------------------------------------------------------------------ */
 /* SUBSCRIBE BAND + EMAIL PREVIEW                                      */
@@ -226,6 +226,8 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [showPreview, setShowPreview] = useState(false);
   const debounce = useRef(null);
 
+  const addressSettled = useSettled(address);
+  const precinctSettled = useSettled(precinctQuery);
   const effective = chosenDistrict || district;
   const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -426,7 +428,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
               </button>
             </div>
           )}
-          {lookupState === 'done' && !suggestion && address.trim().length >= 6 && (
+          {lookupState === 'done' && !suggestion && address.trim().length >= 6 && addressSettled && (
             <div className="text-[11px] text-black/60 mt-1">No NYC match found — keep typing or pick a district on the map above.</div>
           )}
         </div>
@@ -493,7 +495,9 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
                       return <div className="px-3 py-2 text-[11px] text-black/60">Looking up address&hellip;</div>;
                     }
                     if (!precinctHits.length) {
-                      return <div className="px-3 py-2 text-[11px] text-black/60">No NYC address found yet &mdash; keep typing.</div>;
+                      return precinctSettled
+                        ? <div className="px-3 py-2 text-[11px] text-black/60">No NYC address found.</div>
+                        : <div className="px-3 py-2 text-[11px] text-black/60">Looking up address&hellip;</div>;
                     }
                     return precinctHits.map(h => (
                       <button key={h.label} type="button" onMouseDown={() => choose(h.precinct)}
@@ -509,7 +513,11 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
                   const list = !q ? PRECINCTS
                     : digits ? PRECINCTS.filter(pr => String(pr.num).startsWith(digits))
                     : PRECINCTS.filter(pr => pr.hood.toLowerCase().includes(q));
-                  if (!list.length) return <div className="px-3 py-2 text-[11px] text-black/60">No match &mdash; keep typing, or enter your address.</div>;
+                  if (!list.length) {
+                    return precinctSettled
+                      ? <div className="px-3 py-2 text-[11px] text-black/60">No match &mdash; try a precinct number, a neighbourhood, or your address.</div>
+                      : null;
+                  }
                   return list.map(pr => (
                     <button key={pr.num} type="button" onMouseDown={() => choose(pr)}
                       className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-black/5 flex justify-between gap-3">

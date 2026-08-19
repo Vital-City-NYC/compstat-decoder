@@ -161,6 +161,14 @@ def main():
     subs = dsubs
 
     flags = []
+    # A subscriber with no geography receives nothing, forever, and has no way to
+    # tell. That is exactly how the f_id bug hid for five days, so it is a CHECK now
+    # rather than a footnote at the bottom of the digest.
+    if no_district:
+        who = ", ".join(sorted(x["Email Address"] for x in no_district)[:5])
+        flags.append(("MISSING", f"{len(no_district)} subscriber(s) stored with no district and no precinct — "
+                                 f"they receive nothing until it is fixed ({who}). Check the signup path is "
+                                 f"still passing GEO_TYPE, DISTRICT and PRECINCT."))
     cadence_blocks = []   # one entry per cadence in this cycle
     other = {}
     for x in subs + psubs:

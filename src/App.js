@@ -5,8 +5,7 @@ import {
   safeNum, calcPct, formatGeoName, toOrdinalPrecinct, precinctPatrolBorough, PATROL_BOROUGH_NAMES,
   SearchIcon, Navigation, RefreshCw,
   RTCI_CSV_URL, parseRTCIcsv, RTCI_FALLBACK, RTCI_FALLBACK_PERIOD, RTCI_FALLBACK_UPDATED,
-  ROLLING_URL,
-} from './shared';
+  ROLLING_URL, useSettled } from './shared';
 import vcLogo from './vitalcity-logo.png';
 import NEIGHBORHOODS from './data/neighborhoods.json';
 import HistoricView from './HistoricView';
@@ -64,6 +63,7 @@ export default function App() {
   const [rawData, setRawData] = useState(FALLBACK_DATA);
   const [geoFocused, setGeoFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const searchSettled = useSettled(searchQuery);
   const [fetchError, setFetchError] = useState(false);
   const [rtciData, setRtciData] = useState(null);
   const [contextData, setContextData] = useState(null);
@@ -537,7 +537,7 @@ export default function App() {
                       ))}
                     </>
                   )}
-                  {!geoSearchResults.showCitywide && geoSearchResults.boroughs.length === 0 && geoSearchResults.precincts.length === 0 && (
+                  {!geoSearchResults.showCitywide && geoSearchResults.boroughs.length === 0 && geoSearchResults.precincts.length === 0 && searchSettled && (
                     <div className="px-3 py-3 text-sm text-gray-500">No matches found.</div>
                   )}
                 </div>

@@ -1,4 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+
+/* "No match" is only true once someone has STOPPED typing. Mid-word a query is
+   almost always unmatched, and an async lookup may still be in flight, so showing
+   the message immediately means showing it wrongly. Returns true only after the
+   value has held still for `ms`. */
+export function useSettled(value, ms = 5000) {
+  const [settled, setSettled] = useState(false);
+  useEffect(() => {
+    setSettled(false);
+    const t = setTimeout(() => setSettled(true), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return settled;
+}
 
 /* ------------------------------------------------------------------ */
 /* SHARED CONSTANTS, HELPERS, ICONS & MINI-COMPONENTS                  */
