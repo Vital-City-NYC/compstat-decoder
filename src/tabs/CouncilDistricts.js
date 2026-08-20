@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { geoPath, geoMercator, geoContains } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import councilData from '../data/council_districts.json';
+import crosswalk from '../data/district_crosswalk.json';
 import vcLogo from '../vitalcity-logo.png';
 import SubscribeBand, { GEOSEARCH_URL, districtForPoint } from './Subscribe';
 import {
@@ -18,6 +19,31 @@ const MAJORS = ['Murder', 'Rape', 'Robbery', 'Fel. Assault', 'Burglary', 'Gr. La
 /* dataset's latitude/longitude FIELD NAMES ARE SWAPPED, so we read    */
 /* `latitude` as lng and `longitude` as lat. Fetched once, cached.     */
 /* ------------------------------------------------------------------ */
+/* Precinct weights come from the 2020 Census block crosswalk, not from land area.
+   residentShare = the fraction of THAT PRECINCT's residents living in this district;
+   slice its crime by that and the pieces sum to the crime inside the district. It is
+   what the weighted figures below are built on.
+   share = the fraction of THIS DISTRICT's residents living in that precinct's part.
+   It sums to 1, so it is what reads sensibly as "share of district" in the table.
+   Area weighting used to fill both roles and misweighted districts holding large
+   uninhabited ground — the 113th is 43% of District 31 by acreage and holds two
+   residents (Jamaica Bay and JFK). No minimum-share cutoff: a sliver carries almost
+   no residents, so it now weighs almost nothing on its own. */
+const DISTRICTS = councilData.districts.map((d) => {
+  const cw = crosswalk.districts[String(d.district)];
+  if (!cw) return d;
+  return {
+    ...d,
+    population: cw.population,
+    precincts: cw.precincts.map((r) => ({
+      precinct: r.precinct,
+      share: r.populationShare,
+      residentShare: r.residentShare,
+      residents: r.residents,
+    })),
+  };
+});
+
 // Fetch ALL YTD incidents (not just geocoded ones) so we can report what share have a
 // mapped location. For 2026 the coordinates are true street-level — verified 137 of 138
 // distinct points at 6–8 decimal precision, not precinct centroids.
@@ -114,13 +140,15 @@ function computeCouncilFindings(district, rawData) {
   district.precincts.forEach(o => {
     const geoKey = toOrdinalPrecinct(o.precinct);
     const d = rawData?.[geoKey];
-    const s = o.share;
+    const s = o.residentShare;   // apportion this precinct's crime by its residents here
     const a = tallyGeo(d, null), v = tallyGeo(d, MAJOR_VIOLENT), p = tallyGeo(d, MAJOR_PROPERTY);
     if (a.cur != null) { wAllCur += s * a.cur; wAllPri += s * a.pri; }
     if (v.cur != null) { wVioCur += s * v.cur; wVioPri += s * v.pri; }
     if (p.cur != null) { wPropCur += s * p.cur; wPropPri += s * p.pri; }
     if (typeof a.pct === 'number') {
-      if (a.pct > 0) { upShare += s; upCount++; } else if (a.pct < 0) { downShare += s; downCount++; }
+      // "how much of the district is trending up" is a share OF THE DISTRICT, so it
+      // uses the population share (which sums to 1), not the apportionment factor.
+      if (a.pct > 0) { upShare += o.share; upCount++; } else if (a.pct < 0) { downShare += o.share; downCount++; }
     }
     const fel = d?.seven_major_felonies || {};
     MAJORS.forEach(n => {
@@ -448,7 +476,7 @@ function DistrictChooser({ districts, setDistrictNum }) {
 }
 
 export default function CouncilDistricts({ rawData, activeTab, districtNum, setDistrictNum, contextData, onSelectPrecinct, downloadCSV }) {
-  const districts = councilData.districts;
+  const districts = DISTRICTS;
   const chosen = districts.find(d => d.district === districtNum) || null;
   const district = chosen || districts[0]; // placeholder for computations; render is gated on `chosen`
 
@@ -537,7 +565,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
     }
     // 2. Weighted average change vs citywide.
     if (f.districtAll.pct != null) {
-      out.push(`Across its precincts, ${cWrap(`total crime is ${lowDir(f.districtAll.pct)}`, f.districtAll.pct)} and ${cWrap(`violent crime ${lowDir(f.districtVio.pct)}`, f.districtVio.pct)} (weighted by each precinct's share of the district) — vs. citywide ${cPct(f.cwAll.pct)} and ${cPct(f.cwVio.pct)}.`);
+      out.push(`Across its precincts, ${cWrap(`total crime is ${lowDir(f.districtAll.pct)}`, f.districtAll.pct)} and ${cWrap(`violent crime ${lowDir(f.districtVio.pct)}`, f.districtVio.pct)} (weighted by the share of each precinct's population that lives within the district) — vs. citywide ${cPct(f.cwAll.pct)} and ${cPct(f.cwVio.pct)}.`);
     }
     // 3. Biggest driver crime type.
     if (f.driver) {
@@ -703,7 +731,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
               <tr className="border-t-2 border-gray-400 bg-gray-100">
                 <td className="py-2.5 pr-2">
                   <div className="text-[13px] font-black text-black uppercase tracking-wide">Precinct average</div>
-                  <div className="text-[11px] text-gray-500">Weighted by share of district</div>
+                  <div className="text-[11px] text-gray-500 whitespace-nowrap">Weighted by pop. share within district</div>
                 </td>
                 <td className="py-2.5 text-right tabular-nums text-[13px] text-gray-400">—</td>
                 {changeCell(precinctAvg.all, 'pa-all')}
@@ -762,7 +790,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
           </div>
         </div>
         <p className="text-[13.5px] leading-relaxed text-gray-700 mb-4 flex-shrink-0" style={{ fontFamily: 'Georgia, serif' }}>
-          Every week the New York City Police Department updates data on reported crime in precincts across the city, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
+          Every week the New York City Police Department updates data on crime reported in the city&rsquo;s precincts, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
         </p>
         <div className="mb-5 flex-shrink-0">
           <div className="text-[34px] font-black leading-none" style={{ fontFamily: 'system-ui, sans-serif' }}>Council District {district.district}</div>

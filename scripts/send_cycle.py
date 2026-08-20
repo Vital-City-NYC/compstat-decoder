@@ -23,7 +23,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 from preflight import load_subscribers_mailchimp
-from render_district_email import ROOT, compute_district, neighborhoods, ordinal, render_district
+from render_district_email import ROOT, compute_district, load_council, neighborhoods, ordinal, render_district
 from render_precinct_email import compute_precinct, render_precinct
 
 LIST_ID = "bf42451be9"
@@ -74,7 +74,7 @@ def main():
         return
 
     data = json.load(open(ROOT / "data/latest_compstat.json"))
-    council = {d["district"]: d for d in json.load(open(ROOT / "src/data/council_districts.json"))["districts"]}
+    council = load_council()
     hoods = neighborhoods()
     template = (ROOT / "scripts/email_template.html").read_text()
     ptemplate = (ROOT / "scripts/precinct_email_template.html").read_text()

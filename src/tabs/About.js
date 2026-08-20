@@ -47,12 +47,6 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
         &ldquo;Rape (UCR)&rdquo; uses the FBI&rsquo;s broader Uniform Crime Reporting definition, which runs
         higher than New York&rsquo;s penal-law rape count.
       </P>
-      <P>
-        Because a retired command&rsquo;s workbook can remain online serving outdated numbers, every workbook is
-        checked against the citywide report period, and a lagging file stops the update rather than passing
-        through it. If the live feed is unreachable, the site falls back to an embedded snapshot of a recent
-        week and says so in the footer below.
-      </P>
 
       <H>Historical series, 1993&ndash;2025</H>
       <P>
@@ -91,10 +85,16 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
 
       <H>Populations and rates</H>
       <P>
-        Per-100,000 rates use 2020 decennial Census populations, allocated to precincts
-        via <A href="https://github.com/jkeefe/census-by-precincts">John Keefe&rsquo;s census-by-precincts
-        crosswalk</A>; patrol borough populations are sums of their precincts, and the citywide figure is
-        8,804,190. Rates reflect residential population. The three &ldquo;tourist hub&rdquo; precincts
+        Per-100,000 rates use 2020 decennial Census populations. We allocate them ourselves: every
+        one of New York City&rsquo;s 37,984 census blocks is assigned to the precinct containing it, using
+        block counts and boundaries from the Census Bureau&rsquo;s
+        <A href="https://tigerweb.geo.census.gov/tigerwebmain/TIGERweb_apps.html">TIGERweb</A> service, and
+        the blocks are summed. The block total reconciles to the published city figure of 8,804,190 exactly.
+        Patrol borough populations are sums of their precincts. Doing this ourselves rather than relying on
+        a published crosswalk matters because precinct boundaries change: the 116th Precinct opened in
+        December 2024 out of the 105th and 113th, and a static file cannot know that. Block-level population
+        is published only in the decennial count, so these figures are fixed at 2020 and do not reflect
+        housing built since. Rates reflect residential population. The three &ldquo;tourist hub&rdquo; precincts
         (14th, 18th and 22nd) have daytime populations far above their residential ones, most extremely
         the 22nd (Central Park, 129 residents), so their rates carry a hatch overlay as a warning; %
         changes are unaffected.
@@ -104,10 +104,17 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
       <P>
         District boundaries are the official 2023 City Council lines from NYC Open Data, and member names
         come from <A href="https://council.nyc.gov/districts/">council.nyc.gov</A>. Because the NYPD reports
-        by precinct, not by district, each district&rsquo;s figures are built by weighting its precincts&rsquo;
-        year-to-date CompStat counts by the share of the district&rsquo;s land area falling in each precinct
-        (overlaps under 2% are dropped as boundary slivers). This is an approximation: it assumes
-        crime is spread evenly within a precinct. District figures are always year to date, since weekly
+        by precinct, not by district, each district&rsquo;s figures are built from its precincts&rsquo;
+        year-to-date CompStat counts. Each precinct contributes the share of its crime matching the share
+        of <em>its residents</em> who live inside the district, measured by summing 2020 census blocks. Add
+        those pieces together and they total the crime estimated to have occurred in the district; divide by
+        the district&rsquo;s residents and you have its rate. This is still an approximation, and the
+        assumption is explicit: crime is taken to be spread evenly across a precinct&rsquo;s residents.
+        It replaces an earlier method that weighted by land area, which assumed crime was spread evenly
+        across a precinct&rsquo;s acreage and so gave enormous weight to places where nobody lives &mdash;
+        the 113th Precinct is 43% of District 31 by area and holds two residents, being mostly Jamaica Bay
+        and JFK. Every overlap now counts, however small, since a sliver carries few residents and little
+        weight on its own. District figures are always year to date, since weekly
         counts are too small at that geography to be meaningful.
       </P>
 

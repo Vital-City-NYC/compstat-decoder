@@ -31,7 +31,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from render_precinct_email import compute_precinct, render_precinct
-from render_district_email import (MAJORS, ROOT, compute_district, dir_pct,
+from render_district_email import (MAJORS, ROOT, compute_district, dir_pct, load_council,
                                    neighborhoods, render_district, ordinal)
 
 MAX_AGE_DAYS = 8          # feed staleness — same limit as check_freshness.py
@@ -141,7 +141,7 @@ def main():
     outdir.mkdir(exist_ok=True)
 
     data = json.load(open(ROOT / "data/latest_compstat.json"))
-    council = {d["district"]: d for d in json.load(open(ROOT / "src/data/council_districts.json"))["districts"]}
+    council = load_council()
     hoods = neighborhoods()
     template = (ROOT / "scripts/email_template.html").read_text()
     ptemplate = (ROOT / "scripts/precinct_email_template.html").read_text()

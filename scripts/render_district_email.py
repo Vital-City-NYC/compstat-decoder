@@ -88,6 +88,28 @@ def pct_cell(v, right_pad="9px 0 9px 10px", weight="700"):
             f"font-family:'Hanken Grotesk',Arial,Helvetica,sans-serif;font-size:13px;"
             f'font-weight:{weight};white-space:nowrap;color:{color};">{label}</td>')
 
+def load_council():
+    """Council districts with population-based precinct weights merged in.
+
+    residentShare drives the math (the fraction of THAT precinct's residents living
+    in this district); share is the display figure (the fraction of THIS district's
+    residents in that precinct's part, which sums to 1). Both come from the 2020
+    Census block crosswalk built by scripts/build_populations.py — see that file for
+    why land area was the wrong weight."""
+    council = json.load(open(ROOT / "src/data/council_districts.json"))["districts"]
+    cw = json.load(open(ROOT / "src/data/district_crosswalk.json"))["districts"]
+    out = {}
+    for d in council:
+        x = cw.get(str(d["district"]))
+        if x:
+            d = {**d, "population": x["population"],
+                 "precincts": [{"precinct": r["precinct"], "share": r["populationShare"],
+                                "residentShare": r["residentShare"], "residents": r["residents"]}
+                               for r in x["precincts"]]}
+        out[d["district"]] = d
+    return out
+
+
 def compute_district(d, data, hoods):
     """All of a district's numbers: per-precinct rows, weighted aggregate, driver.
     Shared by the renderer and by preflight.py's vet checks."""
@@ -101,15 +123,17 @@ def compute_district(d, data, hoods):
                  [("all", MAJORS), ("violent", MAJOR_VIOLENT), ("property", MAJOR_PROPERTY)]}
         if any(v is None for v in stats.values()):
             continue
-        rows_data.append({"key": key, "share": o["share"], "hood": hoods.get(key, ""), **stats})
+        rows_data.append({"key": key, "share": o["share"],
+                          "residentShare": o.get("residentShare", o["share"]),
+                          "hood": hoods.get(key, ""), **stats})
     if not rows_data:
         raise RuntimeError(f"district {d['district']}: no computable precincts")
 
     # weighted district aggregate + per-crime driver, same math as the website
     w = {}
     for cat in ("all", "violent", "property"):
-        cur = sum(r["share"] * r[cat]["cur"] for r in rows_data)
-        pri = sum(r["share"] * r[cat]["pri"] for r in rows_data)
+        cur = sum(r["residentShare"] * r[cat]["cur"] for r in rows_data)
+        pri = sum(r["residentShare"] * r[cat]["pri"] for r in rows_data)
         w[cat] = ((cur - pri) / pri * 100) if pri > 0 else None
     net_sign = 1 if (w["all"] or 0) > 0 else -1
     driver = None
@@ -123,8 +147,8 @@ def compute_district(d, data, hoods):
             if not isinstance(c, (int, float)) or not isinstance(p, (int, float)):
                 ok = False
                 break
-            cur += r["share"] * c
-            pri += r["share"] * p
+            cur += r["residentShare"] * c
+            pri += r["residentShare"] * p
         if not ok or pri <= 0:
             continue
         diff = cur - pri
@@ -321,7 +345,7 @@ def main():
     args = ap.parse_args()
 
     data = json.load(open(ROOT / "data/latest_compstat.json"))
-    council = json.load(open(ROOT / "src/data/council_districts.json"))["districts"]
+    council = list(load_council().values())
     hoods = neighborhoods()
     template = (ROOT / "scripts/email_template.html").read_text()
     outdir = ROOT / "email_preview"

@@ -412,8 +412,8 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
         </div>
       )}
       <div className="mb-7">
-        <p className="font-serif text-[17px] lg:text-[18px] leading-relaxed text-gray-700 font-medium text-justify sm:text-left hyphens-auto">
-          Every week the New York City Police Department updates data on reported crime in precincts across the city, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
+        <p className="font-serif text-[17px] lg:text-[17.5px] leading-relaxed text-gray-700 font-medium text-justify sm:text-left hyphens-auto text-balance">
+          Every week the New York City Police Department updates data on crime reported in the city&rsquo;s precincts, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
         </p>
       </div>
       {/* Precinct rate vs citywide — the one comparison a resident can't compute from
