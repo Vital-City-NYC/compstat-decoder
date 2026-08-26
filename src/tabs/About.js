@@ -66,7 +66,11 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
       <P>
         <strong>Shooting incidents.</strong> The map under By Council District plots the NYPD Shooting
         Incident Data, year to date (<Code>5ucz-vwe8</Code>), at the incident level. The latitude and
-        longitude fields are transposed in the source dataset; the site corrects for this.
+        longitude fields are transposed in the source dataset; the site corrects for this. Every
+        incident with coordinates is plotted. NYPD geocodes incidents to street-segment midpoints and
+        intersections rather than exact addresses, and when it cannot locate an address at all it
+        defaults the coordinates to the precinct stationhouse &mdash; historically a small share of
+        records, roughly 1 in 35.
       </P>
       <P>
         <strong>Precinct locator.</strong> The &ldquo;locate me&rdquo; button checks the visitor&rsquo;s

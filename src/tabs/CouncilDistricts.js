@@ -768,7 +768,9 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
       {/* Shootings coverage note (below the grid, so toggling never resizes the map) */}
       {showShootings && shootingWindow && (
         <p className="mt-4 text-[11px] italic text-gray-500 leading-snug max-w-3xl">
-          {shootingWindow.total} shooting incidents were reported citywide {fmtDate(shootingWindow.from)} to {fmtDate(shootingWindow.to)}, {shootingWindow.located} of them ({Math.round((shootingWindow.located / shootingWindow.total) * 100)}%) with a precise mapped location — the rest lacked coordinates. Dots show the {shootingWindow.located} mapped incidents; click one for details. Source: NYPD Open Data, refreshed quarterly, so the most recent weeks aren't shown yet.
+          {shootingWindow.total} shooting incidents were reported citywide {fmtDate(shootingWindow.from)} to {fmtDate(shootingWindow.to)}{shootingWindow.located < shootingWindow.total
+            ? `, ${shootingWindow.located} of them (${Math.round((shootingWindow.located / shootingWindow.total) * 100)}%) with a mapped location — the rest lacked coordinates`
+            : ', every one with a mapped location'}. NYPD geocodes incidents to street-segment midpoints and intersections rather than exact addresses. Dots show the {shootingWindow.located} mapped incidents; click one for details. Source: NYPD Open Data, refreshed quarterly, so the most recent weeks aren't shown yet.
         </p>
       )}
 
