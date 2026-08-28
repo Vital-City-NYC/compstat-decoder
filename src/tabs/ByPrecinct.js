@@ -14,16 +14,18 @@ import { GEOSEARCH_URL, precinctForPoint } from './Subscribe';
    one thing a resident arrives knowing. Every match is listed rather than the first
    being taken — the district lookups had that bug and it hid Brooklyn behind
    Manhattan. */
-const PrecinctFinder = ({ onSelect }) => {
+const PrecinctFinder = ({ onPick, precinctRates, mapMode }) => {
   const [q, setQ] = useState('');
   const [hits, setHits] = useState([]);
   const [state, setState] = useState('idle');
+  const [chosen, setChosen] = useState(null);
   const timer = useRef(null);
   const settled = useSettled(q, 4000);
 
   useEffect(() => {
     const t = q.trim();
     if (t.length < 6 || !/\d/.test(t) || /^\d+$/.test(t)) { setHits([]); setState('idle'); return undefined; }
+    setChosen(null);
     setState('searching');
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
@@ -56,8 +58,8 @@ const PrecinctFinder = ({ onSelect }) => {
       {state === 'searching' && !hits.length && (
         <div className="text-[11px] text-gray-400 mt-1.5">Looking up address&hellip;</div>
       )}
-      {hits.map(h => (
-        <button key={h.label} onClick={() => onSelect(h.pr.key)}
+      {!chosen && hits.map(h => (
+        <button key={h.label} onClick={() => { setChosen(h); setHits([]); onPick(String(h.pr.num)); }}
           className="w-full text-left mt-1.5 px-2 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-sm">
           <div className="text-[11px] text-gray-500 leading-tight truncate">{h.label}</div>
           <div className="text-[12px] font-black text-black leading-tight">
@@ -65,6 +67,29 @@ const PrecinctFinder = ({ onSelect }) => {
           </div>
         </button>
       ))}
+      {chosen && (() => {
+        // Answer in place: the map outlines the precinct and this states its figure, so
+        // nobody has to leave the page or hover to find out what they just looked up.
+        const row = (precinctRates || []).find(r => r.precinctNum === String(chosen.pr.num));
+        const isPct = mapMode === 'change';
+        const val = !row ? null : isPct ? row.pctChange : row.rate;
+        return (
+          <div className="mt-1.5 px-2 py-1.5 border border-gray-800 rounded-sm bg-white">
+            <div className="text-[11px] text-gray-500 leading-tight truncate">{chosen.label}</div>
+            <div className="text-[12px] font-black text-black leading-tight">
+              {chosen.pr.key}{chosen.pr.hood ? <span className="font-normal text-gray-500"> &middot; {chosen.pr.hood}</span> : ''}
+            </div>
+            {val != null && (
+              <div className="text-[11px] text-gray-600 mt-0.5">
+                {isPct ? `${val > 0 ? 'Up' : 'Down'} ${Math.abs(val).toFixed(1)}%` : `${formatRate(val)} per 100k`}
+                <span className="text-gray-400"> &middot; highlighted on the map</span>
+              </div>
+            )}
+            <button onClick={() => { setChosen(null); setQ(''); onPick(null); }}
+              className="text-[11px] underline text-gray-500 hover:text-black mt-1">Clear</button>
+          </div>
+        );
+      })()}
       {state === 'done' && !hits.length && settled && (
         <div className="text-[11px] text-gray-400 mt-1.5">No NYC address found.</div>
       )}
@@ -250,7 +275,7 @@ const PrecinctMap = ({ precinctRates, onSelect, mapMode = 'rate', width = 520, h
 /* ------------------------------------------------------------------ */
 /* PRECINCT RANKING BARS                                               */
 /* ------------------------------------------------------------------ */
-const PrecinctRankingBars = ({ precinctRates, onSelect, mapMode = 'rate', hoveredPrecinctNum = null, onHover }) => {
+const PrecinctRankingBars = ({ precinctRates, onSelect, onFind, mapMode = 'rate', hoveredPrecinctNum = null, onHover }) => {
   const { top5, bottom5 } = useMemo(() => {
     // Tourist precincts (Times Square / Midtown South) have distorted per-capita rates
     // but their % change is not distorted by daytime population, so we include them in
@@ -320,7 +345,7 @@ const PrecinctRankingBars = ({ precinctRates, onSelect, mapMode = 'rate', hovere
         {bottom5.map(item => renderRow(item, VC.green, botMax, 'down'))}
       </div>
       <div className="mt-auto">
-        <PrecinctFinder onSelect={onSelect} />
+        <PrecinctFinder onPick={onFind} precinctRates={precinctRates} mapMode={mapMode} />
       </div>
     </div>
   );
@@ -338,6 +363,15 @@ const OFFENSE_PILLS = [
 
 export default function ByPrecinct({ precinctRates, mapMode, setMapMode, mapCrime, setMapCrime, onSelectPrecinct }) {
   const [hoveredPrecinctNum, setHoveredPrecinctNum] = useState(null);
+  const mapRef = useRef(null);
+  /* A looked-up address highlights its precinct on THIS page rather than jumping to
+     Crime Types — the point of searching here is to see where you are on this map. */
+  const handleFind = (precinctNum) => {
+    setHoveredPrecinctNum(precinctNum);
+    if (precinctNum != null && mapRef.current && typeof window !== 'undefined') {
+      mapRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   return (
     <div>
@@ -369,9 +403,9 @@ export default function ByPrecinct({ precinctRates, mapMode, setMapMode, mapCrim
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-[2.2fr_1fr] gap-6 items-stretch">
+      <div ref={mapRef} className="grid grid-cols-1 md:grid-cols-[2.2fr_1fr] gap-6 items-stretch">
         <PrecinctMap precinctRates={precinctRates} onSelect={onSelectPrecinct} mapMode={mapMode} externalHovered={hoveredPrecinctNum} onHover={setHoveredPrecinctNum} />
-        <PrecinctRankingBars precinctRates={precinctRates} onSelect={onSelectPrecinct} mapMode={mapMode} hoveredPrecinctNum={hoveredPrecinctNum} onHover={setHoveredPrecinctNum} />
+        <PrecinctRankingBars precinctRates={precinctRates} onSelect={onSelectPrecinct} onFind={handleFind} mapMode={mapMode} hoveredPrecinctNum={hoveredPrecinctNum} onHover={setHoveredPrecinctNum} />
       </div>
     </div>
   );
