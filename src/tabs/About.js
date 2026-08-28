@@ -104,22 +104,34 @@ export default function About({ contextData, parsedData, feedWeekEnd, fetchError
         changes are unaffected.
       </P>
 
+      {/* WEIGHTED-AVG HIDDEN 2026-08-28 (Liz's call): no combined district figure is published,
+          so the methodology explaining how one was derived came out with it. The weighting is
+          still computed (src/data/district_crosswalk.json, scripts/build_populations.py). The
+          paragraph that ran here until 2026-08-28, to restore alongside the figures:
+
+          "...by precinct, not by district, each district's figures are built from its precincts'
+          year-to-date CompStat counts. Each precinct contributes the share of its crime matching
+          the share of ITS residents who live inside the district, measured by summing 2020 census
+          blocks. Add those pieces together and they total the crime estimated to have occurred in
+          the district; divide by the district's residents and you have its rate. This is still an
+          approximation, and the assumption is explicit: crime is taken to be spread evenly across
+          a precinct's residents. It replaces an earlier method that weighted by land area, which
+          assumed crime was spread evenly across a precinct's acreage and so gave enormous weight
+          to places where nobody lives - the 113th Precinct is 43% of District 31 by area and holds
+          two residents, being mostly JFK. Every overlap now counts, however small, since a sliver
+          carries few residents and little weight on its own."
+      */}
       <H>Council districts</H>
       <P>
         District boundaries are the official 2023 City Council lines from NYC Open Data, and member names
         come from <A href="https://council.nyc.gov/districts/">council.nyc.gov</A>. Because the NYPD reports
-        by precinct, not by district, each district&rsquo;s figures are built from its precincts&rsquo;
-        year-to-date CompStat counts. Each precinct contributes the share of its crime matching the share
-        of <em>its residents</em> who live inside the district, measured by summing 2020 census blocks. Add
-        those pieces together and they total the crime estimated to have occurred in the district; divide by
-        the district&rsquo;s residents and you have its rate. This is still an approximation, and the
-        assumption is explicit: crime is taken to be spread evenly across a precinct&rsquo;s residents.
-        It replaces an earlier method that weighted by land area, which assumed crime was spread evenly
-        across a precinct&rsquo;s acreage and so gave enormous weight to places where nobody lives &mdash;
-        the 113th Precinct is 43% of District 31 by area and holds two residents, being mostly Jamaica Bay
-        and JFK. Every overlap now counts, however small, since a sliver carries few residents and little
-        weight on its own. District figures are always year to date, since weekly
-        counts are too small at that geography to be meaningful.
+        by precinct, not by district, we show each overlapping precinct on its own rather than
+        combining them into a single district figure. A precinct is listed when any of the
+        district&rsquo;s residents live in it, and the share shown is the share of the district&rsquo;s
+        population living in that precinct&rsquo;s part, measured by summing 2020 census blocks. Where a
+        precinct is described as up or down &ldquo;on average across the district&rsquo;s precincts,&rdquo;
+        that is a plain average in which each precinct counts once. District figures are always year to
+        date, since weekly counts are too small at that geography to be meaningful.
       </P>
 
       <H>Why the current year&rsquo;s numbers keep changing</H>

@@ -125,6 +125,7 @@ const describeShooting = (s) => {
 };
 const titleCaseBoro = (b) => (b || '').charAt(0) + (b || '').slice(1).toLowerCase();
 
+const MIN_DRIVER_BASE = 30;   // below this a precinct's percentage change is noise
 // Auto-generated top-line findings for a council district, from its precincts' YTD data
 // weighted by each precinct's share of the district's area.
 function computeCouncilFindings(district, rawData) {
@@ -133,7 +134,7 @@ function computeCouncilFindings(district, rawData) {
 
   let wAllCur = 0, wAllPri = 0, wVioCur = 0, wVioPri = 0, wPropCur = 0, wPropPri = 0;
   let upShare = 0, downShare = 0, upCount = 0, downCount = 0;
-  const perCrime = {};
+  const perCrime = {}, perCrimePct = {};
   MAJORS.forEach(n => { perCrime[n] = { cur: 0, pri: 0 }; });
   const pcChanges = []; // per precinct × crime, for sharpest movers
 
@@ -156,6 +157,8 @@ function computeCouncilFindings(district, rawData) {
       const cur = safeNum(stat?.year_to_date?.current_year);
       const pri = safeNum(stat?.year_to_date?.prior_year);
       perCrime[n].cur += s * cur; perCrime[n].pri += s * pri;
+      // Each precinct's OWN percentage change, unweighted — the driver averages these.
+      if (pri >= MIN_DRIVER_BASE) (perCrimePct[n] = perCrimePct[n] || []).push(((cur - pri) / pri) * 100);
       if (pri >= VOLATILITY_THRESHOLD) pcChanges.push({ precinct: geoKey, crime: n, pct: ((cur - pri) / pri) * 100 });
     });
   });
@@ -164,12 +167,28 @@ function computeCouncilFindings(district, rawData) {
   const mk = (cur, pri) => ({ cur, pri, pct: pctOf(cur, pri), diff: cur - pri });
   const districtAll = mk(wAllCur, wAllPri), districtVio = mk(wVioCur, wVioPri), districtProp = mk(wPropCur, wPropPri);
 
+  /* WEIGHTED-AVG HIDDEN 2026-08-28: the driver is now a TRUE average of the district's
+     precincts — each precinct counts once and its own percentage change is averaged, so no
+     district-share weighting enters and it survives the removal of the weighted row.
+     Precincts whose prior-year count for the offence is under MIN_DRIVER_BASE sit out; at
+     that size a percentage is noise and murder wins on two incidents. Share-weighted
+     original preserved:
   const netSign = Math.sign(districtAll.diff);
   let driver = null;
   MAJORS.forEach(n => {
     const diff = perCrime[n].cur - perCrime[n].pri;
     if (Math.sign(diff) === netSign && diff !== 0 && (!driver || Math.abs(diff) > Math.abs(driver.diff))) {
       driver = { name: n, diff, pct: pctOf(perCrime[n].cur, perCrime[n].pri) };
+    }
+  });
+  */
+  let driver = null;
+  MAJORS.forEach(n => {
+    const ps = perCrimePct[n];
+    if (!ps || !ps.length) return;
+    const mean = ps.reduce((a, b) => a + b, 0) / ps.length;
+    if (!driver || Math.abs(mean) > Math.abs(driver.pct)) {
+      driver = { name: n, diff: perCrime[n].cur - perCrime[n].pri, pct: mean, nPrecincts: ps.length };
     }
   });
 
@@ -190,6 +209,7 @@ const lowDir = (v) => dirPct(v).toLowerCase();
 const UP_COLOR = '#d2232a', DN_COLOR = '#57aa4a';
 const upTok = (t) => `{up:${t}}`;
 const dnTok = (t) => `{dn:${t}}`;
+// eslint-disable-next-line no-unused-vars -- kept for the WEIGHTED-AVG HIDDEN bullet
 const cPct = (pct) => (pct > 0 ? upTok : dnTok)(lowDir(pct)); // "down 7.6%", colored by sign
 const cWrap = (text, pct) => (pct > 0 ? upTok : dnTok)(text); // color a whole phrase by a pct's sign
 const renderFinding = (text) => {
@@ -542,6 +562,9 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
   const f = useMemo(() => computeCouncilFindings(district, rawData), [district, rawData]);
 
   // The share-weighted precinct average — a crude estimate of the district as a whole.
+  // Still computed, kept for the WEIGHTED-AVG HIDDEN blocks below (table row, PDF row,
+  // CSV export). Delete nothing here.
+  // eslint-disable-next-line no-unused-vars
   const precinctAvg = { all: f.districtAll, violent: f.districtVio, property: f.districtProp };
 
   // How much this district's weighted year-to-date figure has itself moved across the
@@ -555,21 +578,26 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
   const findings = useMemo(() => {
     const out = [];
     const dName = `Council District ${district.district}`;
-    // 1. Direction the majority of the district's area falls under.
+    // 1. Direction the majority of the district's PEOPLE fall under (population share,
+    //    which is what upShare/downShare sum — it said "area" until 2026-08-28).
     if (f.upCount + f.downCount > 0) {
       const majDown = f.downShare >= f.upShare;
       const dir = majDown ? 'down' : 'up';
       const cnt = majDown ? f.downCount : f.upCount;
       const shr = Math.round((majDown ? f.downShare : f.upShare) * 100);
-      out.push(`Crime is ${cWrap(`${dir} in ${cnt} of the ${f.nP} precincts`, dir === 'up' ? 1 : -1)} that make up ${dName}, together covering **${shr}%** of its area.`);
+      out.push(`Crime is ${cWrap(`${dir} in ${cnt} of the ${f.nP} precincts`, dir === 'up' ? 1 : -1)} that make up ${dName}, that together constitute **${shr}%** of its population.`);
     }
+    /* WEIGHTED-AVG HIDDEN 2026-08-28 (Liz's call): the district-level weighted average is no
+       longer shown. computeCouncilFindings still returns districtAll/districtVio/districtProp,
+       so restoring this bullet is just un-commenting it.
     // 2. Weighted average change vs citywide.
     if (f.districtAll.pct != null) {
       out.push(`Across its precincts, ${cWrap(`total crime is ${lowDir(f.districtAll.pct)}`, f.districtAll.pct)} and ${cWrap(`violent crime ${lowDir(f.districtVio.pct)}`, f.districtVio.pct)} (weighted by the share of each precinct's population that lives within the district) — vs. citywide ${cPct(f.cwAll.pct)} and ${cPct(f.cwVio.pct)}.`);
     }
+    */
     // 3. Biggest driver crime type.
     if (f.driver) {
-      out.push(`The biggest factor is that ${cWrap(`${expandCrime(f.driver.name)} is ${lowDir(f.driver.pct)}`, f.driver.pct)} on average across the precincts.`);
+      out.push(`The biggest factor is that ${cWrap(`${expandCrime(f.driver.name)} is ${lowDir(f.driver.pct)}`, f.driver.pct)} on average across the district's precincts.`);
     }
     // 4 / 5. Sharpest single precinct×crime movers.
     if (f.sharpUp) {
@@ -679,7 +707,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
               </button>
             <button
               onClick={() => {
-                const header = ['Precinct', 'Neighborhoods', 'Share of district area',
+                const header = ['Precinct', 'Neighborhoods', 'Share of district population',
                   `All ${yy(endYear)}`, `All ${yy(endYear - 1)}`, 'All change (%)',
                   `Violent ${yy(endYear)}`, `Violent ${yy(endYear - 1)}`, 'Violent change (%)',
                   `Property ${yy(endYear)}`, `Property ${yy(endYear - 1)}`, 'Property change (%)'];
@@ -688,7 +716,8 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                   m.violent.cur ?? '', m.violent.pri ?? '', typeof m.violent.pct === 'number' ? m.violent.pct.toFixed(2) : '',
                   m.property.cur ?? '', m.property.pri ?? '', typeof m.property.pct === 'number' ? m.property.pct.toFixed(2) : ''];
                 const data = rows.map(r => { const l = line(r.geoKey, (r.share * 100).toFixed(1) + '%', r); l[1] = r.hoods; return l; });
-                data.push(line('Precinct average (weighted by share)', '', precinctAvg));
+                // WEIGHTED-AVG HIDDEN 2026-08-28 — restore by un-commenting:
+                // data.push(line('Precinct average (weighted by share)', '', precinctAvg));
                 data.push(line('Citywide', '100%', citywide));
                 downloadCSV(`council_district_${district.district}_precincts.csv`, [header, ...data]);
               }}
@@ -727,18 +756,22 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                   {changeCell(r.property, 'property')}
                 </tr>
               ))}
-              {/* District (precinct average) + Citywide comparison lines */}
+              {/* Citywide comparison line. WEIGHTED-AVG HIDDEN 2026-08-28 (Liz's call): the
+                  "Precinct average" row above it is no longer shown. `precinctAvg` is still
+                  computed, so restoring it is just un-commenting this block:
+
               <tr className="border-t-2 border-gray-400 bg-gray-100">
                 <td className="py-2.5 pr-2">
                   <div className="text-[13px] font-black text-black uppercase tracking-wide">Precinct average</div>
                   <div className="text-[11px] text-gray-500 whitespace-nowrap">Weighted by pop. share within district</div>
                 </td>
-                <td className="py-2.5 text-right tabular-nums text-[13px] text-gray-400">—</td>
+                <td className="py-2.5 text-right tabular-nums text-[13px] text-gray-400">&mdash;</td>
                 {changeCell(precinctAvg.all, 'pa-all')}
                 {changeCell(precinctAvg.violent, 'pa-violent')}
                 {changeCell(precinctAvg.property, 'pa-property')}
               </tr>
-              <tr className="bg-gray-50/60">
+              */}
+              <tr className="border-t-2 border-gray-400 bg-gray-50/60">
                 <td className="py-2.5 pr-2">
                   <div className="text-[13px] font-black text-black uppercase tracking-wide">Citywide</div>
                   <div className="text-[11px] text-gray-500">Average for comparison</div>
@@ -838,12 +871,15 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                     {pdfCell(r.all)}{pdfCell(r.violent)}{pdfCell(r.property)}
                   </tr>
                 ))}
+                {/* WEIGHTED-AVG HIDDEN 2026-08-28 (Liz's call) — printable report, same as
+                    the on-screen table. Restore by un-commenting:
                 <tr className="border-t-2 border-gray-400 bg-gray-100">
                   <td className="py-[5px] pr-1 text-[9.5px] font-black uppercase">Precinct avg</td>
-                  <td className="text-right text-[10px] text-gray-400">—</td>
+                  <td className="text-right text-[10px] text-gray-400">&mdash;</td>
                   {pdfCell(precinctAvg.all)}{pdfCell(precinctAvg.violent)}{pdfCell(precinctAvg.property)}
                 </tr>
-                <tr className="bg-gray-50">
+                */}
+                <tr className="border-t-2 border-gray-400 bg-gray-50">
                   <td className="py-[5px] pr-1 text-[9.5px] font-black uppercase">Citywide</td>
                   <td className="text-right text-[10px] text-gray-400">—</td>
                   {pdfCell(citywide.all)}{pdfCell(citywide.violent)}{pdfCell(citywide.property)}

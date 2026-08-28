@@ -64,6 +64,9 @@ def populations():
     return pops, boro_of, citywide_pop
 
 TOURIST = {"14th Precinct", "18th Precinct", "22nd Precinct"}
+# Below this prior-year count a precinct's percentage change is noise, so it is left
+# out of the driver average rather than allowed to dominate it.
+MIN_DRIVER_BASE = 30
 
 def neighborhoods():
     s = (ROOT / "src/shared.js").read_text()
@@ -135,25 +138,50 @@ def compute_district(d, data, hoods):
         cur = sum(r["residentShare"] * r[cat]["cur"] for r in rows_data)
         pri = sum(r["residentShare"] * r[cat]["pri"] for r in rows_data)
         w[cat] = ((cur - pri) / pri * 100) if pri > 0 else None
-    net_sign = 1 if (w["all"] or 0) > 0 else -1
+    # WEIGHTED-AVG HIDDEN 2026-08-28 — the driver is now a TRUE average of the district's
+    # precincts: each precinct counts once, and its own percentage change is averaged with
+    # the others. No district-share weighting enters, so this survives the removal of the
+    # weighted "precinct average" row. Precincts whose prior-year count for the offence is
+    # under MIN_DRIVER_BASE are left out of the mean — at that size a percentage is noise,
+    # and including them let murder win on two incidents.
+    # The share-weighted original is preserved verbatim below; restore it by swapping the
+    # two blocks back. `w` is still computed above and still returned.
+    #
+    #   net_sign = 1 if (w["all"] or 0) > 0 else -1
+    #   driver = None
+    #   for name in MAJORS:
+    #       cur = pri = 0
+    #       ok = True
+    #       for r in rows_data:
+    #           geo = data[r["key"]]
+    #           y = geo["seven_major_felonies"].get(name, {}).get("year_to_date", {})
+    #           c, p = y.get("current_year"), y.get("prior_year")
+    #           if not isinstance(c, (int, float)) or not isinstance(p, (int, float)):
+    #               ok = False
+    #               break
+    #           cur += r["residentShare"] * c
+    #           pri += r["residentShare"] * p
+    #       if not ok or pri <= 0:
+    #           continue
+    #       diff = cur - pri
+    #       if (diff > 0) == (net_sign > 0) and (driver is None or abs(diff) > abs(driver["diff"])):
+    #           driver = {"name": name, "diff": diff, "pct": (cur - pri) / pri * 100}
     driver = None
     for name in MAJORS:
-        cur = pri = 0
-        ok = True
+        pcts, total_diff = [], 0
         for r in rows_data:
-            geo = data[r["key"]]
-            y = geo["seven_major_felonies"].get(name, {}).get("year_to_date", {})
+            y = data[r["key"]]["seven_major_felonies"].get(name, {}).get("year_to_date", {})
             c, p = y.get("current_year"), y.get("prior_year")
             if not isinstance(c, (int, float)) or not isinstance(p, (int, float)):
-                ok = False
-                break
-            cur += r["residentShare"] * c
-            pri += r["residentShare"] * p
-        if not ok or pri <= 0:
+                continue
+            total_diff += c - p
+            if p >= MIN_DRIVER_BASE:
+                pcts.append((c - p) / p * 100)
+        if not pcts:
             continue
-        diff = cur - pri
-        if (diff > 0) == (net_sign > 0) and (driver is None or abs(diff) > abs(driver["diff"])):
-            driver = {"name": name, "diff": diff, "pct": (cur - pri) / pri * 100}
+        mean = sum(pcts) / len(pcts)
+        if driver is None or abs(mean) > abs(driver["pct"]):
+            driver = {"name": name, "diff": total_diff, "pct": mean, "nPrecincts": len(pcts)}
 
     return {"rows": rows_data, "weighted": w, "driver": driver}
 
@@ -272,7 +300,10 @@ def render_district(d, data, hoods, template, cadence, computed=None):
     below_city = sum(1 for c in comparable if c["below_city"])
     below_boro = sum(1 for c in comparable if c["below_boro"])
     boro_groups = {BORO_GROUP.get(c["boro"]) for c in comparable if c["boro"]}
+    # "the Bronx", not "Bronx" — the only borough that takes the article.
     boro_word = boro_groups.pop() if len(boro_groups) == 1 else "their borough"
+    if boro_word == "Bronx":
+        boro_word = "the Bronx"
     numw = lambda k: NUM_WORD.get(k, str(k))
     def pct_names(keys):
         labels = [k.replace(" Precinct", "") for k in keys]
