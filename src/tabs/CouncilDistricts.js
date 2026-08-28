@@ -499,7 +499,7 @@ const DistrictTitleSelector = ({ districts, district, setDistrictNum }) => {
    The box takes an address too — geocoded with the same lookup the subscribe flow uses. */
 function DistrictChooser({ districts, setDistrictNum }) {
   const [q, setQ] = useState('');
-  const [suggestion, setSuggestion] = useState(null);
+  const [suggestions, setSuggestions] = useState([]);   // every geocoder match, not just the first
   const [lookupState, setLookupState] = useState('idle');
   const debounce = useRef(null);
   const norm = q.trim().toLowerCase();
@@ -511,7 +511,7 @@ function DistrictChooser({ districts, setDistrictNum }) {
     const t = q.trim();
     // only geocode input that reads like an address, not a number or a name fragment
     if (t.length < 6 || !/\d/.test(t) || /^district\s*\d*$/i.test(t) || /^\d+$/.test(t)) {
-      setSuggestion(null); setLookupState('idle'); return;
+      setSuggestions([]); setLookupState('idle'); return;
     }
     setLookupState('searching');
     clearTimeout(debounce.current);
@@ -519,11 +519,23 @@ function DistrictChooser({ districts, setDistrictNum }) {
       fetch(GEOSEARCH_URL + encodeURIComponent(t))
         .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
         .then(gj => {
-          const hit = (gj.features || []).map(ft => ({ ft, d: districtForPoint(ft.geometry.coordinates, districts) })).find(x => x.d);
-          setSuggestion(hit ? { label: hit.ft.properties?.label || t, district: hit.d } : null);
+          /* Every match, not the first that resolves. "160 5th Ave" comes back Manhattan
+             first, Brooklyn second — taking the first handed back the wrong borough with
+             no way to see the right one. */
+          const seen = new Set();
+          const hits = [];
+          for (const ft of gj.features || []) {
+            const d = districtForPoint(ft.geometry.coordinates, districts);
+            const label = ft.properties?.label || '';
+            if (!d || !label || seen.has(label)) continue;
+            seen.add(label);
+            hits.push({ label, district: d });
+            if (hits.length >= 6) break;
+          }
+          setSuggestions(hits);
           setLookupState('done');
         })
-        .catch(() => { setSuggestion(null); setLookupState('error'); });
+        .catch(() => { setSuggestions([]); setLookupState('error'); });
     }, 350);
     return () => clearTimeout(debounce.current);
   }, [q, districts]);
@@ -537,14 +549,14 @@ function DistrictChooser({ districts, setDistrictNum }) {
           placeholder="Your address, district number or Council member&hellip;"
           className="w-full border border-gray-300 rounded bg-white px-3 py-2 text-[14px] font-bold focus:outline-none focus:border-gray-500 mb-2" />
         {lookupState === 'searching' && <div className="text-[11px] text-gray-500 mb-1">Looking up address&hellip;</div>}
-        {suggestion && (
-          <button onClick={() => setDistrictNum(suggestion.district.district)}
+        {suggestions.map(sg => (
+          <button key={sg.label} onClick={() => setDistrictNum(sg.district.district)}
             className="w-full text-left px-3 py-2 mb-2 bg-white border border-gray-800 rounded-sm hover:bg-gray-50">
-            <span className="text-[12px] text-gray-500">{suggestion.label} &rarr; </span>
-            <span className="text-[13px] font-black text-black">District {suggestion.district.district}</span>
-            {suggestion.district.member && <span className="text-[13px] text-gray-500"> — {suggestion.district.member}</span>}
+            <span className="text-[12px] text-gray-500">{sg.label} &rarr; </span>
+            <span className="text-[13px] font-black text-black">District {sg.district.district}</span>
+            {sg.district.member && <span className="text-[13px] text-gray-500"> — {sg.district.member}</span>}
           </button>
-        )}
+        ))}
         <div className="max-h-72 overflow-y-auto border border-gray-200 bg-white rounded-sm">
           {matches.map(d => (
             <button key={d.district} onClick={() => setDistrictNum(d.district)}
@@ -553,7 +565,7 @@ function DistrictChooser({ districts, setDistrictNum }) {
               {d.member && <span className="text-[13px] text-gray-500"> — {d.member}</span>}
             </button>
           ))}
-          {matches.length === 0 && !suggestion && lookupState !== 'searching' && settled && (
+          {matches.length === 0 && !suggestions.length && lookupState !== 'searching' && settled && (
             <div className="px-3 py-3 text-[13px] text-gray-500">No match — try a number 1&ndash;51 or a member&rsquo;s name.</div>
           )}
         </div>

@@ -206,7 +206,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
   const [chosenDistrict, setChosenDistrict] = useState(null); // null = follow the district being viewed
   const [addressMode, setAddressMode] = useState(standalone);
   const [address, setAddress] = useState('');
-  const [suggestion, setSuggestion] = useState(null); // { label, district }
+  const [suggestions, setSuggestions] = useState([]); // [{ label, district }] — every geocoder match
   const [lookupState, setLookupState] = useState('idle'); // idle | searching | done | error
   const [signedUp, setSignedUp] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -233,22 +233,30 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
 
   // Geocode as the user types, then locate the point in a district polygon.
   useEffect(() => {
-    if (!addressMode || address.trim().length < 6) { setSuggestion(null); setLookupState('idle'); return; }
+    if (!addressMode || address.trim().length < 6) { setSuggestions([]); setLookupState('idle'); return; }
     setLookupState('searching');
     clearTimeout(debounce.current);
     debounce.current = setTimeout(() => {
       fetch(GEOSEARCH_URL + encodeURIComponent(address))
         .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
         .then(gj => {
-          const hit = (gj.features || []).find(ft => {
+          /* Offer EVERY match, not the first one that resolves. "160 5th Ave" returns
+             Manhattan first and Brooklyn second, so taking the first quietly gave Josh
+             the wrong borough with no way to see the right one. */
+          const seen = new Set();
+          const hits = [];
+          for (const ft of gj.features || []) {
             const d = districtForPoint(ft.geometry.coordinates, districts);
-            if (d) { setSuggestion({ label: ft.properties?.label || address, district: d }); return true; }
-            return false;
-          });
-          if (!hit) setSuggestion(null);
+            const label = ft.properties?.label || '';
+            if (!d || !label || seen.has(label)) continue;
+            seen.add(label);
+            hits.push({ label, district: d });
+            if (hits.length >= 6) break;
+          }
+          setSuggestions(hits);
           setLookupState('done');
         })
-        .catch(() => { setSuggestion(null); setLookupState('error'); });
+        .catch(() => { setSuggestions([]); setLookupState('error'); });
     }, 350);
     return () => clearTimeout(debounce.current);
   }, [address, addressMode, districts]);
@@ -322,20 +330,20 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             {pickerOpen && (
               <div className="absolute z-20 left-0 right-0 bg-white border border-gray-800 border-t-0 max-h-52 overflow-y-auto">
                 {lookupState === 'searching' && <div className="px-3 py-2 text-[11px] text-black/60">Looking up address&hellip;</div>}
-                {suggestion && (
-                  <button type="button" onMouseDown={() => pick(suggestion.district)}
+                {suggestions.map(sg => (
+                  <button key={sg.label} type="button" onMouseDown={() => pick(sg.district)}
                     className="w-full text-left px-3 py-2 text-[12px] hover:bg-black/5 border-b border-gray-200">
-                    <span className="font-black">{suggestion.label}</span> &rarr; District {suggestion.district.district}
-                    {suggestion.district.member ? ` (${suggestion.district.member})` : ''}
+                    <span className="font-black">{sg.label}</span> &rarr; District {sg.district.district}
+                    {sg.district.member ? ` (${sg.district.member})` : ''}
                   </button>
-                )}
+                ))}
                 {matches.map(d => (
                   <button key={d.district} type="button" onMouseDown={() => pick(d)}
                     className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-black/5">
                     <span className="font-bold">District {d.district}</span>{d.member ? ` — ${d.member}` : ''}
                   </button>
                 ))}
-                {!suggestion && matches.length === 0 && lookupState !== 'searching' && (
+                {!suggestions.length && matches.length === 0 && lookupState !== 'searching' && (
                   <div className="px-3 py-2 text-[11px] text-black/60">Keep typing your address&hellip;</div>
                 )}
               </div>
@@ -418,17 +426,17 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
             placeholder="Your address (e.g. 100 Gold St, Manhattan)"
             className="w-full border border-gray-800 bg-white px-3 py-2 text-[13px] focus:outline-none" />
           {lookupState === 'searching' && <div className="text-[11px] text-black/60 mt-1">Looking up…</div>}
-          {suggestion && (
-            <div className="text-[12px] text-black mt-1">
-              {suggestion.label} → District {suggestion.district.district}
-              {suggestion.district.member ? ` (${suggestion.district.member})` : ''}{' '}
+          {suggestions.map(sg => (
+            <div key={sg.label} className="text-[12px] text-black mt-1">
+              {sg.label} &rarr; District {sg.district.district}
+              {sg.district.member ? ` (${sg.district.member})` : ''}{' '}
               <button type="button" className="font-black underline"
-                onClick={() => { setChosenDistrict(suggestion.district); setAddressMode(false); setAddress(''); }}>
+                onClick={() => { setChosenDistrict(sg.district); setAddressMode(false); setAddress(''); setSuggestions([]); }}>
                 Use this district
               </button>
             </div>
-          )}
-          {lookupState === 'done' && !suggestion && address.trim().length >= 6 && addressSettled && (
+          ))}
+          {lookupState === 'done' && !suggestions.length && address.trim().length >= 6 && addressSettled && (
             <div className="text-[11px] text-black/60 mt-1">No NYC match found — keep typing or pick a district on the map above.</div>
           )}
         </div>
