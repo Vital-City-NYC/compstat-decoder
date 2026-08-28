@@ -331,12 +331,37 @@ const DistrictMap = ({ district, onSelectPrecinct, shootings, showShootings, set
           const pNum = parseInt(f.properties.precinct, 10);
           const share = shareByPrecinct[pNum];
           if (share == null || share < MIN_LABEL_SHARE) return null;
-          // Point inside the precinct's slice OF THIS DISTRICT (precomputed in
-          // build_populations.py). The whole precinct's centroid can sit well outside the
-          // frame when the overlap is small, which is why those labels used to vanish.
-          const lp = labelByPrecinct[pNum];
-          let [cx, cy] = lp ? projection(lp) : pathFn.centroid(f);
-          if (!isFinite(cx) || !isFinite(cy) || cx < 0 || cx > width || cy < 0 || cy > height) return null;
+          /* Label the precinct where a reader looks for it: the middle of the precinct
+             itself. The map draws neighbouring precincts too, so that point is usually on
+             canvas even when most of the precinct lies outside the district. Only when it
+             is not do we fall back to a point inside the sliver of overlap (precomputed in
+             build_populations.py) — that keeps a label like District 45's 66th on the map,
+             but placing a thin sliver's point FIRST put it on the district outline, away
+             from the precinct's own colour, which read as mislabelled. */
+          const own = pathFn.centroid(f);
+          if (!isFinite(own[0]) || !isFinite(own[1])) return null;
+          const slice = labelByPrecinct[pNum] ? projection(labelByPrecinct[pNum]) : null;
+          /* If the precinct's own centre sits off-canvas (most of the precinct lies outside
+             this district's view), slide it back to the nearest edge rather than jumping to
+             the sliver of overlap. The sliver's point hugs the district outline and reads as
+             belonging to the neighbour — District 45's 66th sat on the boundary line. The
+             clamp keeps the label's vertical position, so it stays over the precinct's own
+             visible colour. */
+          const margin = 46;
+          const onFrame = (q) => q && q[0] > margin && q[0] < width - margin && q[1] > 18 && q[1] < height - 18;
+          let cx, cy;
+          if (onFrame(own)) {
+            [cx, cy] = own;                       // the precinct's own centre is visible: use it
+          } else if (share >= 0.03 && onFrame(slice)) {
+            [cx, cy] = slice;                     // a real chunk of the district: centre it on that chunk
+          } else {
+            // A sliver whose precinct lies mostly off-view. The slice point hugs the district
+            // outline and reads as the neighbour's, so slide the precinct's own centre to the
+            // nearest edge instead — it keeps the label on the precinct's own colour.
+            cx = Math.min(Math.max(own[0], margin), width - margin);
+            cy = Math.min(Math.max(own[1], 18), height - 18);
+          }
+          if (own[0] < -2 * width || own[0] > 3 * width || own[1] < -2 * height || own[1] > 3 * height) return null;
           // A thin sliver gets a compact one-line label — it is far narrower, so two
           // adjacent slivers usually both fit without being moved at all.
           const compact = share < 0.05;
