@@ -1,11 +1,76 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { geoPath, geoMercator } from 'd3-geo';
 import precinctGeoJSON from '../data/nyc_precincts.json';
 import bigParks from '../data/big_parks.json';
 import {
   GEO_POPULATIONS, PRECINCT_NEIGHBORHOODS, VC,
-  crimeColor, changeColor, formatRate, TrendingUp, TrendingDown,
+  crimeColor, changeColor, formatRate, TrendingUp, TrendingDown, useSettled,
 } from '../shared';
+import { GEOSEARCH_URL, precinctForPoint } from './Subscribe';
+
+/* Address -> precinct, in the space freed by pulling the two ranking lists together.
+   Deliberately small: one field and up to three results. The nav already has a geo
+   search and a locate-me button, but neither says "type your address", which is the
+   one thing a resident arrives knowing. Every match is listed rather than the first
+   being taken — the district lookups had that bug and it hid Brooklyn behind
+   Manhattan. */
+const PrecinctFinder = ({ onSelect }) => {
+  const [q, setQ] = useState('');
+  const [hits, setHits] = useState([]);
+  const [state, setState] = useState('idle');
+  const timer = useRef(null);
+  const settled = useSettled(q, 4000);
+
+  useEffect(() => {
+    const t = q.trim();
+    if (t.length < 6 || !/\d/.test(t) || /^\d+$/.test(t)) { setHits([]); setState('idle'); return undefined; }
+    setState('searching');
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => {
+      fetch(GEOSEARCH_URL + encodeURIComponent(t))
+        .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+        .then(gj => {
+          const seen = new Set();
+          const out = [];
+          for (const ft of gj.features || []) {
+            const pr = precinctForPoint(ft.geometry.coordinates);
+            const label = ft.properties?.label || '';
+            if (!pr || !label || seen.has(label)) continue;
+            seen.add(label);
+            out.push({ label: label.replace(', USA', ''), pr });
+            if (out.length >= 3) break;
+          }
+          setHits(out); setState('done');
+        })
+        .catch(() => { setHits([]); setState('error'); });
+    }, 350);
+    return () => clearTimeout(timer.current);
+  }, [q]);
+
+  return (
+    <div className="border-t border-gray-200 pt-3">
+      <div className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-1.5">Find your precinct</div>
+      <input type="text" value={q} onChange={(e) => setQ(e.target.value)}
+        placeholder="Enter your address"
+        className="w-full border border-gray-300 rounded-sm bg-white px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-gray-600" />
+      {state === 'searching' && !hits.length && (
+        <div className="text-[11px] text-gray-400 mt-1.5">Looking up address&hellip;</div>
+      )}
+      {hits.map(h => (
+        <button key={h.label} onClick={() => onSelect(h.pr.key)}
+          className="w-full text-left mt-1.5 px-2 py-1.5 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-sm">
+          <div className="text-[11px] text-gray-500 leading-tight truncate">{h.label}</div>
+          <div className="text-[12px] font-black text-black leading-tight">
+            {h.pr.key}{h.pr.hood ? <span className="font-normal text-gray-500"> &middot; {h.pr.hood}</span> : ''}
+          </div>
+        </button>
+      ))}
+      {state === 'done' && !hits.length && settled && (
+        <div className="text-[11px] text-gray-400 mt-1.5">No NYC address found.</div>
+      )}
+    </div>
+  );
+};
 
 /* ------------------------------------------------------------------ */
 /* PRECINCT CHOROPLETH MAP                                             */
@@ -241,7 +306,7 @@ const PrecinctRankingBars = ({ precinctRates, onSelect, mapMode = 'rate', hovere
   const botMax = mapMode === 'change' ? Math.abs(bottom5[0]?.pctChange || 1) : (top5[0]?.rate || 1);
 
   return (
-    <div className="flex flex-col justify-between h-full gap-6 py-2">
+    <div className="flex flex-col h-full gap-5 py-2">
       <div>
         <div className="text-[10px] font-black uppercase tracking-widest text-gray-400 mb-2 flex items-center gap-1" style={{ color: VC.magenta }}>
           <TrendingUp size={12} /> {mapMode === 'change' ? 'Biggest % increases' : 'Highest rate (per 100k)'}
@@ -253,6 +318,9 @@ const PrecinctRankingBars = ({ precinctRates, onSelect, mapMode = 'rate', hovere
           <TrendingDown size={12} /> {mapMode === 'change' ? 'Biggest % decreases' : 'Lowest rate (per 100k)'}
         </div>
         {bottom5.map(item => renderRow(item, VC.green, botMax, 'down'))}
+      </div>
+      <div className="mt-auto">
+        <PrecinctFinder onSelect={onSelect} />
       </div>
     </div>
   );
