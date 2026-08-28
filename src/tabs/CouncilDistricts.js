@@ -38,6 +38,7 @@ const DISTRICTS = councilData.districts.map((d) => {
     precincts: cw.precincts.map((r) => ({
       precinct: r.precinct,
       share: r.populationShare,
+      labelPoint: r.labelPoint,
       residentShare: r.residentShare,
       residents: r.residents,
     })),
@@ -235,7 +236,10 @@ const renderFinding = (text) => {
 // Categorical pastels for the overlapping precincts, echoing the D15 model map.
 const PRECINCT_COLORS = ['#aac4e4', '#f9c99b', '#f2a79e', '#b5d9a8', '#cfcbe6', '#eab8cf', '#dbd3a4', '#a5d8d3'];
 
-const MIN_LABEL_SHARE = 0.04; // don't label slivers on the map; the table has them all
+// Every precinct that holds any of the district's residents gets a label. There used to
+// be a 4% floor, which silently hid real overlaps once weighting moved to population
+// (District 2's 17th and 14th are ~2% each and were unlabelled).
+const MIN_LABEL_SHARE = 0;
 
 // District geographies are too small for weekly counts, so this tab reads the year_to_date
 // node — which in the 52-week view holds the rolling window (see buildRollingData).
@@ -257,17 +261,19 @@ const DistrictMap = ({ district, onSelectPrecinct, shootings, showShootings, set
   const svgRef = useRef(null);
   useEffect(() => { setActive(null); setHoverKey(null); }, [district, showShootings]);
 
-  const { pathFn, projection, districtFeature, shareByPrecinct, colorByPrecinct } = useMemo(() => {
+  const { pathFn, projection, districtFeature, shareByPrecinct, colorByPrecinct, labelByPrecinct } = useMemo(() => {
     const districtFeature = { type: 'Feature', properties: {}, geometry: district.geometry };
     const projection = geoMercator().fitExtent([[36, 36], [width - 36, height - 36]], districtFeature);
     const pathFn = geoPath().projection(projection);
     const shareByPrecinct = {};
     const colorByPrecinct = {};
+    const labelByPrecinct = {};
     district.precincts.forEach((o, i) => {
       shareByPrecinct[o.precinct] = o.share;
       colorByPrecinct[o.precinct] = PRECINCT_COLORS[i % PRECINCT_COLORS.length];
+      labelByPrecinct[o.precinct] = o.labelPoint;
     });
-    return { pathFn, projection, districtFeature, shareByPrecinct, colorByPrecinct };
+    return { pathFn, projection, districtFeature, shareByPrecinct, colorByPrecinct, labelByPrecinct };
   }, [district, width, height]);
 
   // Shootings inside this district's boundary, projected to the map's coordinate space.
@@ -314,21 +320,57 @@ const DistrictMap = ({ district, onSelectPrecinct, shootings, showShootings, set
         })}
         {/* District outline on top */}
         <path d={pathFn(districtFeature)} fill="none" stroke="#111" strokeWidth={2.5} strokeLinejoin="round" pointerEvents="none" />
-        {/* Labels for the overlapping precincts */}
-        {precinctGeoJSON.features.map(f => {
+        {/* Labels for the overlapping precincts. Placed biggest-share first, and a label
+            that would land on one already placed is nudged downward — two thin slivers can
+            sit side by side (District 2's 14th and 17th) and would otherwise overprint. */}
+        {(() => { const placed = []; return precinctGeoJSON.features
+          .slice()
+          .sort((a, b) => (shareByPrecinct[parseInt(b.properties.precinct, 10)] || 0)
+                        - (shareByPrecinct[parseInt(a.properties.precinct, 10)] || 0))
+          .map(f => {
           const pNum = parseInt(f.properties.precinct, 10);
           const share = shareByPrecinct[pNum];
           if (share == null || share < MIN_LABEL_SHARE) return null;
-          const [cx, cy] = pathFn.centroid(f);
+          // Point inside the precinct's slice OF THIS DISTRICT (precomputed in
+          // build_populations.py). The whole precinct's centroid can sit well outside the
+          // frame when the overlap is small, which is why those labels used to vanish.
+          const lp = labelByPrecinct[pNum];
+          let [cx, cy] = lp ? projection(lp) : pathFn.centroid(f);
           if (!isFinite(cx) || !isFinite(cy) || cx < 0 || cx > width || cy < 0 || cy > height) return null;
+          // A thin sliver gets a compact one-line label — it is far narrower, so two
+          // adjacent slivers usually both fit without being moved at all.
+          const compact = share < 0.05;
+          const halfW = compact ? 42 : 78;
+          const step = compact ? 16 : 30;
+          // Nudge UP first: a small overlap sits at the district's edge, so up keeps the
+          // label beside its own sliver, while down drops it into the neighbour's colour.
+          for (const dir of [-1, 1]) {
+            let y = cy;
+            let ok = true;
+            for (let guard = 0; guard < 5; guard++) {
+              const yy = y;
+              if (!placed.some(q => Math.abs(q[0] - cx) < halfW + q[2] && Math.abs(q[1] - yy) < step)) { ok = true; break; }
+              y += dir * step;
+              ok = false;
+            }
+            if (ok && y > 8 && y < height - 8) { cy = y; break; }
+          }
+          if (cy < 0 || cy > height) return null;
+          placed.push([cx, cy, halfW]);
           const short = toOrdinalPrecinct(pNum).replace(' Precinct', '');
           return (
             <g key={`label-${pNum}`} pointerEvents="none">
-              <text x={cx} y={cy - 3} textAnchor="middle" fontSize="13" fontWeight="800" fill="#1f2937" stroke="#fff" strokeWidth="3" paintOrder="stroke">{short} Pct</text>
-              <text x={cx} y={cy + 11} textAnchor="middle" fontSize="11" fontWeight="600" fill="#4b5563" stroke="#fff" strokeWidth="3" paintOrder="stroke">{Math.round(share * 100)}% of district</text>
+              {compact ? (
+                <text x={cx} y={cy + 4} textAnchor="middle" fontSize="11" fontWeight="800" fill="#1f2937" stroke="#fff" strokeWidth="3" paintOrder="stroke">
+                  {short} Pct &middot; {share < 0.005 ? '<1' : Math.round(share * 100)}%
+                </text>
+              ) : (<>
+                <text x={cx} y={cy - 3} textAnchor="middle" fontSize="13" fontWeight="800" fill="#1f2937" stroke="#fff" strokeWidth="3" paintOrder="stroke">{short} Pct</text>
+                <text x={cx} y={cy + 11} textAnchor="middle" fontSize="11" fontWeight="600" fill="#4b5563" stroke="#fff" strokeWidth="3" paintOrder="stroke">{share < 0.005 ? '<1' : Math.round(share * 100)}% of pop.</text>
+              </>)}
             </g>
           );
-        })}
+        }); })()}
         {/* Shooting incidents — click a dot to pin its details */}
         {showShootings && districtShootings.map(s => (
           <circle
@@ -732,7 +774,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
             <thead>
               <tr className="text-[10px] font-black uppercase tracking-widest text-gray-400 border-b-2 border-black">
                 <th className="py-2">Precinct</th>
-                <th className="py-2 text-right leading-tight">Share of<br className="sm:hidden" /> district</th>
+                <th className="py-2 text-right leading-tight">Share of district<br className="sm:hidden" /> population</th>
                 <th className="py-2 text-right">All</th>
                 <th className="py-2 text-right">Violent</th>
                 <th className="py-2 text-right">Property</th>
@@ -857,7 +899,7 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
               <thead>
                 <tr className="text-[7px] font-black uppercase tracking-wide text-gray-400 border-b-2 border-black">
                   <th className="text-left py-1 align-bottom">Precinct</th>
-                  <th className="text-right py-1 align-bottom leading-tight">Share of<br />district</th>
+                  <th className="text-right py-1 align-bottom leading-tight">Share of district<br />population</th>
                   <th className="text-right py-1 pl-1.5 align-bottom">All</th>
                   <th className="text-right py-1 pl-1.5 align-bottom">Violent</th>
                   <th className="text-right py-1 pl-1.5 align-bottom">Property</th>

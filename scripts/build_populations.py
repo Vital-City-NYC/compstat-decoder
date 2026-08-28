@@ -143,6 +143,15 @@ def main():
     #   crime inside the district.
     # populationShare is for DISPLAY: of the district's residents, the fraction in
     #   this precinct's part. Sums to 1, so it reads as "share of district".
+    # Where to put each precinct's label on the district map. The map used to take the
+    # centroid of the WHOLE precinct, which for a precinct that barely overlaps sits far
+    # outside the frame — so those labels were silently dropped (District 2's 17th and
+    # 14th). representative_point() on the intersection is guaranteed to fall inside the
+    # visible sliver.
+    pshapes = {int(f["properties"]["precinct"]): shape(f["geometry"]).buffer(0)
+               for f in precincts["features"]}
+    dshapes = {d["district"]: shape(d["geometry"]).buffer(0) for d in districts}
+
     out = {}
     for d in districts:
         n = d["district"]
@@ -150,10 +159,21 @@ def main():
         for (pr, di), v in pair.items():
             if di != n:
                 continue
+            label = None
+            try:
+                piece = pshapes[pr].intersection(dshapes[n])
+                if not piece.is_empty:
+                    if piece.geom_type == "MultiPolygon":
+                        piece = max(piece.geoms, key=lambda g: g.area)
+                    pt = piece.representative_point()
+                    label = [round(pt.x, 5), round(pt.y, 5)]
+            except Exception:
+                label = None
             rows.append({"precinct": pr,
                          "residents": v,
                          "residentShare": round(v / pop_precinct[pr], 6),
-                         "populationShare": round(v / pop_district[n], 6)})
+                         "populationShare": round(v / pop_district[n], 6),
+                         "labelPoint": label})
         rows.sort(key=lambda r: -r["populationShare"])
         out[str(n)] = {"population": pop_district[n], "precincts": rows}
     (ROOT / "src/data/district_crosswalk.json").write_text(
