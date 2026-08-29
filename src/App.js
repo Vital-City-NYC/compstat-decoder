@@ -457,6 +457,9 @@ export default function App() {
         {/* Single-row navigation: brand, section tabs, geography, period toggle */}
         <div className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-gray-200 -mx-5 sm:-mx-8 px-5 sm:px-8 mb-8 py-2 flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-x-2 gap-y-1.5 print:hidden">
           <div className="flex flex-col sm:flex-row sm:items-center gap-y-0.5 sm:gap-1 w-full sm:w-auto min-w-0">
+          {/* Framed inside the Vital City site the page supplies the brand,
+              so the wordmark + product name are dropped and Headlines becomes a plain tab. */}
+          {!EMBED && (
           <div className="flex items-center gap-2 self-start flex-shrink-0 sm:mr-2">
             {/* Wordmark at 19px tall (~91px wide) per brand minimum of 90px on web */}
             <a href="https://www.vitalcitynyc.org/" target="_blank" rel="noopener noreferrer" title="Vital City" className="flex-shrink-0 flex items-center">
@@ -471,7 +474,18 @@ export default function App() {
               NYC CompStat Decoder
             </button>
           </div>
+          )}
           <nav className="flex items-center justify-between sm:justify-start w-full sm:w-auto" aria-label="Sections">
+            {EMBED && (
+              <button
+                onClick={() => { setActiveGeo('citywide'); setMainTab('headlines'); }}
+                aria-pressed={mainTab === 'headlines'}
+                title="Home — citywide headlines"
+                className={`text-[11px] sm:text-[12.5px] font-bold px-0.5 sm:px-1.5 py-1.5 border-b-2 transition-colors flex-shrink-0 whitespace-nowrap ${mainTab === 'headlines' ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-black'}`}
+              >
+                Overview
+              </button>
+            )}
             {MAIN_TABS.map(([key, label]) => (
               <button
                 key={key}
@@ -571,6 +585,7 @@ export default function App() {
         ) : (<>
         {mainTab === 'headlines' && (
           <Headlines
+            embed={EMBED}
             parsedData={parsedData}
             hotspots={hotspots}
             rawData={effectiveRaw}

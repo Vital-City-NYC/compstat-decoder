@@ -324,7 +324,7 @@ function buildBullets({ parsedData, hotspots, rawData, activeGeo, activeTab, isT
 /* ------------------------------------------------------------------ */
 /* HEADLINES TAB                                                       */
 /* ------------------------------------------------------------------ */
-export default function Headlines({ parsedData, hotspots, rawData, activeTab, activeGeo, isTouristPrecinct, activePop, rtciData, contextData, rollingMeta, rollingState, downloadCSV, onSelectGeo }) {
+export default function Headlines({ parsedData, hotspots, rawData, activeTab, activeGeo, isTouristPrecinct, activePop, rtciData, contextData, rollingMeta, rollingState, downloadCSV, onSelectGeo, embed }) {
   const { totals, felonies, period } = parsedData;
 
   // Violent / property subsets of the 7-felony major index.
@@ -411,11 +411,15 @@ export default function Headlines({ parsedData, hotspots, rawData, activeTab, ac
           The weekly series behind the 52-week view couldn't be loaded, so these figures are still year-to-date.
         </div>
       )}
+      {/* Framed inside the Vital City site, the page hero already carries this
+          exact language, so the intro only renders full-screen. */}
+      {!embed && (
       <div className="mb-7">
         <p className="font-serif text-[17px] lg:text-[17.5px] leading-relaxed text-gray-700 font-medium text-justify sm:text-left hyphens-auto text-balance">
           Every week the New York City Police Department updates data on crime reported in the city&rsquo;s precincts, in a process known as CompStat. This page decodes that data so that no matter where you are in the city, you can understand how crime is changing near you.
         </p>
       </div>
+      )}
       {/* Precinct rate vs citywide — the one comparison a resident can't compute from
           counts alone. Same window on both sides; hidden on the weekly view (per-100k
           on one week is noise) and for tourist hubs / precincts with no population. */}
