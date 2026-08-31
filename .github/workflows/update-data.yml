@@ -46,9 +46,6 @@ jobs:
       - name: Scrape the weekly CompStat workbooks
         run: python3 scripts/scrape_compstat.py
 
-      - name: Fail if the feed is stale (NYPD posted nothing new)
-        run: python3 scripts/check_freshness.py
-
       - name: Extend the weekly series and rebuild the 52-week rollup
         run: python3 scripts/archive_weekly_series.py
 
@@ -74,6 +71,21 @@ jobs:
             git push
           fi
 
+      - name: Fail if the feed is stale (NYPD posted nothing new)
+        # LAST on purpose, and the ordering is load-bearing twice over.
+        #
+        # It reads the committed rolling.json, so run before the archiver it grades the
+        # PREVIOUS week's run rather than this one — and since it aborts the job, the
+        # archiver never reached the gap it was complaining about. That deadlocked the
+        # pipeline on 2026-08-31: the rolling feed stalled at 8/16 while the workbooks
+        # reached 8/30, and the Tuesday retry could only fail the same way, forever.
+        #
+        # It also sits after the commit so a red run still BANKS its progress. If the
+        # API is mid-catch-up the partial advance is worth keeping; failing first would
+        # throw it away and refetch the same weeks next time. The run still goes red and
+        # still files the alarm issue, which is the part that has to work.
+        run: python3 scripts/check_freshness.py
+
       - name: File an alarm issue on failure
         if: failure()
         env:
@@ -85,4 +97,10 @@ jobs:
 
           Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
-          Common causes: the NYPD posted late (the Tuesday retry usually heals this on its own — check tomorrow before acting); a retired workbook URL after a command reorganization (fix the file list in scripts/scrape_compstat.py); a changed workbook layout (read the run log)." || true
+          Read the log to see WHICH guard tripped — the two failures need opposite responses.
+
+          STALE FEED (workbook age): the NYPD posted late. The Tuesday retry usually heals this on its own; check tomorrow before acting.
+
+          ROLLING FEED BEHIND: the workbooks are fine and the timeline API at compstat.nypdonline.org is the one lagging. It normally trails by about a week and catches up on its own, so a single red run here is not yet an emergency — but if it repeats a second week the API has missed a full cycle and the Past-year view (the site DEFAULT) is serving a stale window. Waiting does not fix that one.
+
+          Other causes: a retired workbook URL after a command reorganization (fix the file list in scripts/scrape_compstat.py); a changed workbook layout (read the run log)." || true
