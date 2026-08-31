@@ -17,8 +17,18 @@ them. On 8/17 the workbooks carried the week ending 8/16 while the timeline API
 still ended at 8/09, so the site's DEFAULT view (Past year) silently served a
 week-old window while every run stayed green. A lag of up to a week is normal:
 on Monday the workbooks jump to the new week while the API is still on the last
-one, and it catches up within a day or two. More than 8 days means the API has
-missed an entire cycle, which is a real failure nobody would otherwise see.
+one. More than 8 days means the API has missed an entire cycle, which is a real
+failure nobody would otherwise see.
+
+WHEN THE API ACTUALLY PUBLISHES (measured 2026-08-31, correcting an earlier guess
+here that it "catches up within a day or two"): later than Tuesday midday, most
+likely Wednesday. The week ending 8/16 was absent Tue 8/18 12:15 ET and present
+Wed 8/19 19:11 ET; the week ending 8/23 was still absent Tue 8/25 10:43 ET. Up to
+that date NO scheduled run had ever advanced the rolling series — both times it
+moved, a human triggered it — because the Monday and Tuesday slots both run before
+the API posts. Hence the Wednesday and Saturday crons in update-data.yml. If you
+ever collapse the schedule back to Monday/Tuesday, this guard starts riding one
+day inside its own limit again.
 
 Do NOT gate this on the workbook age instead: the workbooks advance every Monday,
 so age resets to 1 each week and a permanently dead rolling feed would never trip

@@ -4,6 +4,13 @@ name: Update CompStat data
 # quietly freezes — the same failure mode as reading a retired workbook. The scraper
 # refuses to write when a workbook lags the citywide report, so a failed run means the
 # NYPD changed something; read the log before overriding it.
+#
+# THIS JOB FEEDS TWO SOURCES ON TWO CLOCKS, which is the thing to hold onto before
+# touching the schedule below. The Excel workbooks land Monday midday and drive the
+# Week and YTD views. The CompStat 2.0 timeline API drives the rolling 52-week series
+# behind the DEFAULT Past-year view, and it publishes the same week days later. A slot
+# chosen for one source will silently fail to serve the other: the Monday and Tuesday
+# crons caught the workbooks every time and the API not once.
 on:
   schedule:
     - cron: '0 18 * * 1'   # Mondays 2pm ET / 1pm EST. The NYPD posted at ~12:45 ET on
@@ -13,6 +20,18 @@ on:
                            # send job, which runs at 16:00 UTC. They used to share the
                            # 16:00 slot, so a retry could rewrite data/ while the send
                            # was rendering from it.
+    - cron: '0 22 * * 3'   # Wednesday 6pm ET — for the TIMELINE API, not the workbooks.
+                           # The two NYPD sources publish on different days and the slots
+                           # above only ever caught the workbooks. Measured: the week
+                           # ending 8/16 was absent Tue 8/18 12:15 ET and present Wed 8/19
+                           # 19:11 ET; the week ending 8/23 was absent Tue 8/25 10:43 ET.
+                           # Through 2026-08-31 no SCHEDULED run had ever advanced the
+                           # rolling series — both times it moved, a human ran it. Without
+                           # this slot the series can only catch up on the following
+                           # Monday, a 7-day lag that sits one day inside the guard.
+    - cron: '0 22 * * 6'   # Saturday 6pm ET — backstop. The Wednesday timing is inferred
+                           # from two observations, so if the API slips later in the week
+                           # this still lands the data before Monday's guard runs.
   workflow_dispatch:
     inputs:
       test_alarm:
