@@ -34,7 +34,12 @@ from render_precinct_email import compute_precinct, render_precinct
 from render_district_email import (MAJORS, ROOT, compute_district, dir_pct, load_council,
                                    neighborhoods, render_district, ordinal)
 
-MAX_AGE_DAYS = 8          # feed staleness — same limit as check_freshness.py
+# The age at which the NYPD's own data is old enough that a reviewer should be told
+# before a send goes out. This is NOT a pipeline-health limit: being behind the NYPD is
+# checked separately and exactly, against the observation ledger. This is "the newest
+# week the NYPD has is getting old", which on a holiday week is nobody's bug — the
+# monthly cycle keys off the first Monday, and in September that is ALWAYS Labor Day.
+STALE_NOTICE_DAYS = 8
 SMALL_BASE = 30           # prior-year count below this = statistically volatile
 WILD_SWING = 60           # |percent change| beyond this gets human eyes
 
@@ -129,6 +134,27 @@ def vet_district(n, computed, flags):
         flags.append(("MISSING", f"District {n}: no driver crime could be computed — intro sentence will omit it"))
     expected = None  # crosswalk count checked by caller (needs district object)
 
+def ledger_behind():
+    """-> [] when our feed matches both NYPD sources, else a description per source.
+
+    Reads the prober's ledger rather than a clock, so a late NYPD reads as "nothing new
+    upstream" instead of as staleness. Silent (returns []) when no ledger exists yet.
+    """
+    led = ROOT / "data" / "source_observations.jsonl"
+    if not led.exists():
+        return []
+    rows = [json.loads(ln) for ln in led.read_text().splitlines() if ln.strip()]
+    if not rows:
+        return []
+    last = rows[-1]
+    out = []
+    for label, a, sv in (("workbooks", "wb_avail", "wb_served"),
+                         ("rolling series", "api_avail", "api_served")):
+        if last.get(a) and last[a] != last.get(sv):
+            out.append(f"{label}: NYPD has {last[a]}, we serve {last.get(sv)}")
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--subscribers", default=str(ROOT / "email_preview/subscribers_sample.csv"),
@@ -150,8 +176,18 @@ def main():
     week_end = data["citywide"]["report_period"]["week_end"]
     age = (datetime.now(timezone.utc)
            - datetime.strptime(week_end, "%m/%d/%Y").replace(tzinfo=timezone.utc)).days
-    if age > MAX_AGE_DAYS:
-        sys.exit(f"STALE FEED: data through {week_end} ({age} days old) — refusing to prepare a send.")
+    # Two different questions, and the old single age test could not tell them apart.
+    #
+    # 1. Are WE behind the NYPD? That is a broken pipeline and must block the send —
+    #    subscribers would get numbers we could have had. Measured exactly.
+    behind = ledger_behind()
+    if behind:
+        sys.exit("BEHIND THE NYPD: " + "; ".join(behind) +
+                 " — refusing to prepare a send from data we know is not current.")
+
+    # 2. Is the NYPD's newest week simply old? A holiday, not a fault. The send should
+    #    still go, but no reviewer should have to work that out from a date in a footer.
+    stale_notice = age > STALE_NOTICE_DAYS
 
     subs = (load_subscribers_mailchimp() if args.subscribers == "mailchimp"
             else load_subscribers(args.subscribers))
@@ -161,6 +197,15 @@ def main():
     subs = dsubs
 
     flags = []
+    # A holiday pushes the NYPD's post past the first Monday the cycle keys off, so the
+    # digest can be built on a week-old report through no fault of the pipeline. Say so
+    # at the top rather than leaving it as a date in the footer for someone to notice.
+    if stale_notice:
+        flags.append(("OLD DATA", f"the newest week the NYPD has published ends {week_end}, "
+                                  f"{age} days ago. The pipeline is in sync — there is simply "
+                                  f"nothing newer upstream, which is normal on a holiday week. "
+                                  f"The emails will quote these figures. HOLD if you would "
+                                  f"rather wait for a fresher report."))
     # A subscriber with no geography receives nothing, forever, and has no way to
     # tell. That is exactly how the f_id bug hid for five days, so it is a CHECK now
     # rather than a footnote at the bottom of the digest.

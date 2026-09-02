@@ -1,39 +1,38 @@
 name: Update CompStat data
 
 # The dashboard reads its feed from this repo, so if this job stops running the site
-# quietly freezes — the same failure mode as reading a retired workbook. The scraper
-# refuses to write when a workbook lags the citywide report, so a failed run means the
-# NYPD changed something; read the log before overriding it.
+# quietly freezes. The scraper refuses to write when a workbook lags the citywide
+# report, so a failed run means the NYPD changed something; read the log first.
 #
-# THIS JOB FEEDS TWO SOURCES ON TWO CLOCKS, which is the thing to hold onto before
-# touching the schedule below. The Excel workbooks land Monday midday and drive the
-# Week and YTD views. The CompStat 2.0 timeline API drives the rolling 52-week series
-# behind the DEFAULT Past-year view, and it publishes the same week days later. A slot
-# chosen for one source will silently fail to serve the other: the Monday and Tuesday
-# crons caught the workbooks every time and the API not once.
+# THIS JOB FEEDS TWO SOURCES ON TWO CLOCKS. The Excel workbooks land Monday midday
+# and drive the Week and YTD views. The CompStat 2.0 timeline API drives the rolling
+# 52-week series behind the DEFAULT Past-year view, and publishes the same week days
+# later — Wednesday, as far as we can tell.
+#
+# WHY THIS IS NOT ON A WEEKLY CRON ANY MORE (2026-09-02). It used to fire on a guess
+# about the NYPD's schedule. The guess was wrong in a way nobody could see: the slots
+# caught the workbooks every week and the timeline API not once in a month, so the
+# rolling series only ever advanced when a human ran it by hand. A fixed schedule also
+# cannot survive a holiday, and the first Monday of September — the day the monthly
+# email cycle keys off — is ALWAYS Labor Day.
+#
+# So it polls instead. scripts/probe_sources.py costs one HEAD, one 27KB GET and one
+# API POST, cheap enough to run hourly, and the expensive pipeline runs only when a
+# source actually has something we are not serving. The NYPD can publish whenever it
+# likes; we notice within the hour without knowing its calendar. Every probe also
+# records what each source had against what we served, which is what makes
+# scripts/lag_report.py able to say how much delay WE are adding.
 on:
   schedule:
-    - cron: '0 18 * * 1'   # Mondays 2pm ET / 1pm EST. The NYPD posted at ~12:45 ET on
-                           # 2026-08-17 and the old noon slot missed it, so the digest an
-                           # hour later would have been built on the previous week.
-    - cron: '0 14 * * 2'   # Tuesday retry, 10am ET — deliberately TWO HOURS BEFORE the
-                           # send job, which runs at 16:00 UTC. They used to share the
-                           # 16:00 slot, so a retry could rewrite data/ while the send
-                           # was rendering from it.
-    - cron: '0 22 * * 3'   # Wednesday 6pm ET — for the TIMELINE API, not the workbooks.
-                           # The two NYPD sources publish on different days and the slots
-                           # above only ever caught the workbooks. Measured: the week
-                           # ending 8/16 was absent Tue 8/18 12:15 ET and present Wed 8/19
-                           # 19:11 ET; the week ending 8/23 was absent Tue 8/25 10:43 ET.
-                           # Through 2026-08-31 no SCHEDULED run had ever advanced the
-                           # rolling series — both times it moved, a human ran it. Without
-                           # this slot the series can only catch up on the following
-                           # Monday, a 7-day lag that sits one day inside the guard.
-    - cron: '0 22 * * 6'   # Saturday 6pm ET — backstop. The Wednesday timing is inferred
-                           # from two observations, so if the API slips later in the week
-                           # this still lands the data before Monday's guard runs.
+    - cron: '17 * * * *'   # hourly, at :17 to avoid the top-of-hour stampede that makes
+                           # GitHub's scheduler drop runs. Resolution, not precision: a
+                           # delayed or skipped hour costs us minutes, not a cycle.
   workflow_dispatch:
     inputs:
+      force:
+        description: 'Type yes to run the full pipeline even if nothing changed'
+        required: false
+        default: ''
       test_alarm:
         description: 'Type yes to force a failure and test the alarm path'
         required: false
@@ -42,6 +41,12 @@ on:
 permissions:
   contents: write
   issues: write
+
+concurrency:
+  # Hourly runs must never overlap a long catch-up: two jobs writing data/ would race,
+  # and the loser would push a half-updated feed.
+  group: compstat-update
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -62,21 +67,37 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Cheap. Always runs. Decides whether the rest of the job is worth doing, and
+      # writes the observation the lag report is built from.
+      - name: Ask both NYPD sources what they have
+        id: probe
+        run: python3 scripts/probe_sources.py --interval-hours 1
+
       - name: Scrape the weekly CompStat workbooks
+        if: steps.probe.outputs.behind == '1' || inputs.force == 'yes'
         run: python3 scripts/scrape_compstat.py
 
       - name: Extend the weekly series and rebuild the 52-week rollup
+        if: steps.probe.outputs.behind == '1' || inputs.force == 'yes'
         run: python3 scripts/archive_weekly_series.py
 
       - name: Rebuild the revision and volatility context
+        if: steps.probe.outputs.behind == '1' || inputs.force == 'yes'
         run: python3 scripts/build_context.py
 
-      # Nothing depends on the upstream scraper any more, but a second independent parse of
-      # the same NYPD workbooks is a free tripwire for a changed file or column layout. It
-      # never blocks the update — if it reports drift, check the log and decide.
+      # A second independent parse of the same workbooks is a free tripwire for a
+      # changed file or column layout. It never blocks the update.
       - name: Cross-check against the upstream scraper
+        if: steps.probe.outputs.behind == '1' || inputs.force == 'yes'
         continue-on-error: true
         run: python3 scripts/crosscheck_upstream.py
+
+      # Re-probe after the pipeline so the ledger carries the moment we STARTED
+      # serving the new week. Without this the catch-up is invisible until the next
+      # hourly run and every lag measurement is rounded up by up to an hour.
+      - name: Record what we now serve
+        if: steps.probe.outputs.behind == '1' || inputs.force == 'yes'
+        run: python3 scripts/probe_sources.py --interval-hours 1
 
       - name: Commit whatever changed
         run: |
@@ -84,42 +105,72 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
           if git diff --staged --quiet; then
-            echo "No change — the NYPD has not posted a new report."
+            echo "Nothing changed."
           else
-            git commit -m "Weekly CompStat update ($(date -u +%Y-%m-%d))"
+            git commit -m "CompStat update ($(date -u +'%Y-%m-%d %H:%MZ'))"
+            git pull --rebase --autostash
             git push
           fi
 
-      - name: Fail if the feed is stale (NYPD posted nothing new)
-        # LAST on purpose, and the ordering is load-bearing twice over.
-        #
-        # It reads the committed rolling.json, so run before the archiver it grades the
-        # PREVIOUS week's run rather than this one — and since it aborts the job, the
-        # archiver never reached the gap it was complaining about. That deadlocked the
-        # pipeline on 2026-08-31: the rolling feed stalled at 8/16 while the workbooks
-        # reached 8/30, and the Tuesday retry could only fail the same way, forever.
-        #
-        # It also sits after the commit so a red run still BANKS its progress. If the
-        # API is mid-catch-up the partial advance is worth keeping; failing first would
-        # throw it away and refetch the same weeks next time. The run still goes red and
-        # still files the alarm issue, which is the part that has to work.
+      - name: Fail if we are behind the NYPD
         run: python3 scripts/check_freshness.py
+
+      # An hourly job must never open an issue an hour. Both notices below are
+      # deduplicated against the open issues already on the repo.
+      - name: Notice when the NYPD itself has gone quiet
+        if: steps.probe.outputs.late == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TITLE="NOTICE: NYPD has published nothing since ${{ steps.probe.outputs.newest }}"
+          if gh issue list -R "$GITHUB_REPOSITORY" --state open --search "in:title NOTICE NYPD" \
+               --json title -q '.[].title' | grep -qxF "$TITLE"; then
+            echo "Already noticed; not filing again."
+          else
+            gh issue create -R "$GITHUB_REPOSITORY" --title "$TITLE" --body "$(cat <<BODY
+          @tedalcorn Not a failure and nothing to fix here — the pipeline is healthy and
+          in sync. The NYPD simply has not posted a new week since ${{ steps.probe.outputs.newest }},
+          which is longer than a holiday would explain.
+
+          Worth a look at https://compstat.nypdonline.org and the workbook URLs in
+          scripts/scrape_compstat.py in case something moved upstream.
+
+          Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          BODY
+          )" || true
+          fi
 
       - name: File an alarm issue on failure
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh issue create -R "$GITHUB_REPOSITORY" \
-            --title "ALARM: CompStat update failed $(date -u +%Y-%m-%d)" \
-            --body "@tedalcorn The scheduled CompStat update failed. Until this is fixed the site serves last week's data (its own stale notices will appear after ~8 days).
+          TITLE="ALARM: CompStat update failed"
+          if gh issue list -R "$GITHUB_REPOSITORY" --state open --search "in:title ALARM CompStat update failed" \
+               --json title -q '.[].title' | grep -qxF "$TITLE"; then
+            echo "An alarm is already open; not filing a duplicate."
+            exit 0
+          fi
+          gh issue create -R "$GITHUB_REPOSITORY" --title "$TITLE" --body "$(cat <<BODY
+          @tedalcorn The CompStat update failed. Until this is fixed the site serves
+          whatever it last committed.
 
           Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
 
-          Read the log to see WHICH guard tripped — the two failures need opposite responses.
+          This job runs hourly, so it keeps retrying on its own and this issue will NOT be
+          refiled every hour. Close it once fixed; a still-broken pipeline opens a new one
+          on the next failure after that.
 
-          STALE FEED (workbook age): the NYPD posted late. The Tuesday retry usually heals this on its own; check tomorrow before acting.
+          Read the log for which step failed.
 
-          ROLLING FEED BEHIND: the workbooks are fine and the timeline API at compstat.nypdonline.org is the one lagging. It normally trails by about a week and catches up on its own, so a single red run here is not yet an emergency — but if it repeats a second week the API has missed a full cycle and the Past-year view (the site DEFAULT) is serving a stale window. Waiting does not fix that one.
+          BEHIND THE NYPD — the data exists upstream and we are not serving it. Ours to
+          fix, and waiting does not help.
 
-          Other causes: a retired workbook URL after a command reorganization (fix the file list in scripts/scrape_compstat.py); a changed workbook layout (read the run log)." || true
+          A scrape or archive step — a retired workbook URL after a command
+          reorganization (fix the file list in scripts/scrape_compstat.py), or a changed
+          workbook layout.
+
+          A LATE NYPD no longer reaches this path at all: it files a NOTICE issue instead,
+          because a holiday is not a pipeline failure.
+          BODY
+          )" || true

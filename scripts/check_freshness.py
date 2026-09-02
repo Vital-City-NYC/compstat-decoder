@@ -1,62 +1,87 @@
 #!/usr/bin/env python3
-"""Fail loudly when the feed has gone stale.
+"""Fail when WE are behind the NYPD. Stay quiet when the NYPD simply hasn't posted.
 
-The scraper already refuses to write when one workbook lags the rest. This guard
-catches the quieter failure: the NYPD posts nothing at all, the scrape finds no
-change, and the run stays green while the site serves old numbers indefinitely.
+WHAT CHANGED AND WHY (2026-09-02). This guard used to ask "how old is the data?"
+That question cannot tell the two situations apart, and they need opposite
+responses:
 
-CompStat weeks end Sunday and the NYPD posts the workbooks on Mondays, so on any
-given day the citywide week_end should be at most ~7 days old. Anything past
-MAX_AGE_DAYS means either the NYPD is late (the Tuesday retry will usually heal
-it) or the pipeline is broken (a red run + alarm issue is exactly right).
+    the NYPD published and we missed it   -> our bug, page someone
+    the NYPD published nothing            -> a holiday, page no one
 
-SECOND GUARD, added 2026-08-19: the site reads TWO NYPD sources. The workbooks
-above drive the Week and YTD views; the rolling 52-week series in rolling.json
-comes from the CompStat 2.0 timeline API, which publishes a week or so behind
-them. On 8/17 the workbooks carried the week ending 8/16 while the timeline API
-still ended at 8/09, so the site's DEFAULT view (Past year) silently served a
-week-old window while every run stayed green. A lag of up to a week is normal:
-on Monday the workbooks jump to the new week while the API is still on the last
-one. More than 8 days means the API has missed an entire cycle, which is a real
-failure nobody would otherwise see.
+An age threshold conflates them, so it had to be set loose enough to survive
+Labor Day and was therefore too loose to catch a real stall quickly. Worse, the
+first Monday of September — the day the monthly email cycle keys off — is ALWAYS
+Labor Day, so the fragile case recurs annually by construction.
 
-WHEN THE API ACTUALLY PUBLISHES (measured 2026-08-31, correcting an earlier guess
-here that it "catches up within a day or two"): later than Tuesday midday, most
-likely Wednesday. The week ending 8/16 was absent Tue 8/18 12:15 ET and present
-Wed 8/19 19:11 ET; the week ending 8/23 was still absent Tue 8/25 10:43 ET. Up to
-that date NO scheduled run had ever advanced the rolling series — both times it
-moved, a human triggered it — because the Monday and Tuesday slots both run before
-the API posts. Hence the Wednesday and Saturday crons in update-data.yml. If you
-ever collapse the schedule back to Monday/Tuesday, this guard starts riding one
-day inside its own limit again.
+The prober records what each source HAD against what we were SERVING, so the
+honest question is answerable directly: are we behind, and for how long? Upstream
+silence no longer trips anything here. It surfaces as the prober's `late` flag,
+which files a notice rather than an alarm.
 
-Do NOT gate this on the workbook age instead: the workbooks advance every Monday,
-so age resets to 1 each week and a permanently dead rolling feed would never trip
-a test written that way.
+The old absolute-age gates are deliberately gone. Do not reintroduce them: the
+workbook age resets every Monday, so a permanently dead feed never trips a test
+written that way, which was the original hole this file was created to close.
+The ledger closes it properly — a dead feed shows as `behind` forever.
 """
 import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-MAX_AGE_DAYS = 8
-MAX_ROLLING_LAG_DAYS = 8   # one full cycle of grace for the timeline API
+# How long we tolerate being behind a source before calling it a failure. The
+# prober runs hourly, so a normal catch-up is under an hour; this is slack for a
+# delayed runner or a single dropped scheduled run, not for a broken pipeline.
+BEHIND_GRACE_HOURS = 6
 
-data = json.load(open(Path(__file__).resolve().parent.parent / "data/latest_compstat.json"))
-week_end = data["citywide"]["report_period"]["week_end"]
-age = (datetime.now(timezone.utc) - datetime.strptime(week_end, "%m/%d/%Y").replace(tzinfo=timezone.utc)).days
-print(f"citywide data through {week_end} ({age} days old)")
-if age > MAX_AGE_DAYS:
-    sys.exit(f"STALE FEED: newest CompStat week ended {week_end}, {age} days ago "
-             f"(limit {MAX_AGE_DAYS}). The NYPD has not posted, or the scrape is not landing.")
-# --- the rolling feed must catch up to the workbooks ---
-root = Path(__file__).resolve().parent.parent
-rolling = json.load(open(root / "data/rolling.json"))["_rolling"]
-rolling_to = datetime.strptime(rolling["current_to"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
-workbook_to = datetime.strptime(week_end, "%m/%d/%Y").replace(tzinfo=timezone.utc)
-lag = (workbook_to - rolling_to).days
-print(f"rolling series through {rolling['current_to']}")
-if lag > MAX_ROLLING_LAG_DAYS:
-    sys.exit(f"ROLLING FEED BEHIND: workbooks are through {week_end}, rolling series ends "
-             f"{rolling['current_to']}. Re-run scripts/archive_weekly_series.py.")
-print("freshness OK")
+ROOT = Path(__file__).resolve().parent.parent
+LEDGER = ROOT / "data" / "source_observations.jsonl"
+
+
+def parse_t(s):
+    return datetime.fromisoformat(s.replace("Z", "+00:00"))
+
+
+def main():
+    if not LEDGER.exists():
+        print("No observation ledger yet — nothing to check. "
+              "scripts/probe_sources.py creates it.")
+        return 0
+    rows = [json.loads(ln) for ln in LEDGER.read_text().splitlines() if ln.strip()]
+    if not rows:
+        print("Ledger is empty — nothing to check.")
+        return 0
+
+    now = datetime.now(timezone.utc)
+    latest = rows[-1]
+    print(f"workbooks  NYPD {latest['wb_avail']}   we serve {latest['wb_served']}")
+    print(f"timeline   NYPD {latest['api_avail']}   we serve {latest['api_served']}")
+
+    problems = []
+    for label, avail_k, served_k in (("workbooks", "wb_avail", "wb_served"),
+                                     ("rolling series", "api_avail", "api_served")):
+        avail, served = latest.get(avail_k), latest.get(served_k)
+        if not avail or avail == served:
+            continue
+        # How long has this exact gap stood? Walk back to the first row where the
+        # source already had `avail` while we were not yet serving it.
+        since = parse_t(latest["t"])
+        for r in reversed(rows):
+            if r.get(avail_k) == avail and r.get(served_k) != avail:
+                since = parse_t(r["t"])
+            else:
+                break
+        hours = (now - since).total_seconds() / 3600
+        print(f"  ! {label}: behind since {since:%Y-%m-%d %H:%MZ} ({hours:.1f}h)")
+        if hours > BEHIND_GRACE_HOURS:
+            problems.append(f"{label}: the NYPD has {avail}, we serve {served}, "
+                            f"unresolved for {hours:.1f}h (grace {BEHIND_GRACE_HOURS}h)")
+
+    if problems:
+        sys.exit("BEHIND THE NYPD:\n  " + "\n  ".join(problems) +
+                 "\nThe data exists upstream and we are not serving it. This is ours.")
+    print("in sync with both sources")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
