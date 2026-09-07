@@ -46,6 +46,8 @@ def main():
     ap.add_argument("--recipients", nargs="+", required=True)
     ap.add_argument("--digest", default=str(ROOT / "email_preview/preflight_digest.html"))
     ap.add_argument("--previews-dir", default=str(ROOT / "email_preview"))
+    ap.add_argument("--subject", default="", help="override the derived subject line")
+    ap.add_argument("--preview", default="", help="override the preview text")
     args = ap.parse_args()
 
     key = os.environ.get("MAILCHIMP_API_KEY") or (ROOT / ".mailchimp_key").read_text().strip()
@@ -94,8 +96,8 @@ def main():
     camp = api(key, "/campaigns", "POST", {
         "type": "regular",
         "recipients": {"list_id": LIST_ID, "segment_opts": {"saved_segment_id": seg["id"]}},
-        "settings": {"subject_line": f"Pre-flight: {tail} tomorrow",
-                     "preview_text": "The Decoder's cycle report — review or hold before tomorrow's send.",
+        "settings": {"subject_line": args.subject or f"Pre-flight: {tail} tomorrow",
+                     "preview_text": args.preview or "The Decoder's cycle report — review or hold before tomorrow's send.",
                      "title": f"preflight-{datetime.now(timezone.utc).strftime('%Y-%m-%d')}",
                      "from_name": "CompStat Decoder",
                      "reply_to": "info@vitalcitynyc.org",

@@ -39,6 +39,8 @@ from render_district_email import (MAJORS, ROOT, compute_district, dir_pct, load
 # checked separately and exactly, against the observation ledger. This is "the newest
 # week the NYPD has is getting old", which on a holiday week is nobody's bug — the
 # monthly cycle keys off the first Monday, and in September that is ALWAYS Labor Day.
+# (cycle_gate.py slides the cycle a day in that case; this flag is the backstop for
+# when the NYPD has still posted nothing by the slid pre-flight.)
 STALE_NOTICE_DAYS = 8
 SMALL_BASE = 30           # prior-year count below this = statistically volatile
 WILD_SWING = 60           # |percent change| beyond this gets human eyes
@@ -162,6 +164,8 @@ def main():
     ap.add_argument("--note", default="", help="extra sentence for the digest header (e.g. send-job status)")
     ap.add_argument("--cadence", nargs="+", default=["monthly"], choices=["monthly", "quarterly"])
     ap.add_argument("--out", default=str(ROOT / "email_preview"))
+    ap.add_argument("--deferred", action="store_true",
+                    help="this is the Tuesday pre-flight of a cycle that slid a day (holiday Monday)")
     args = ap.parse_args()
     outdir = Path(args.out)
     outdir.mkdir(exist_ok=True)
@@ -187,7 +191,7 @@ def main():
 
     # 2. Is the NYPD's newest week simply old? A holiday, not a fault. The send should
     #    still go, but no reviewer should have to work that out from a date in a footer.
-    stale_notice = age > STALE_NOTICE_DAYS
+    stale_notice = age >= STALE_NOTICE_DAYS   # >=: on a holiday Monday the age is EXACTLY 8
 
     subs = (load_subscribers_mailchimp() if args.subscribers == "mailchimp"
             else load_subscribers(args.subscribers))
@@ -329,7 +333,7 @@ def main():
 <div style="background:#000;color:#fff;padding:22px 28px;">
   <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#dde34c;">CompStat Decoder &middot; pre-flight</div>
   <div style="font-size:21px;font-weight:800;padding-top:6px;">{headline}</div>
-  <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today} &middot; NYPD data through {week_end} ({age} days old) &middot; Nothing to do if this looks right &mdash; it sends tomorrow on its own. To STOP it: <a href="https://github.com/Vital-City-NYC/compstat-decoder/issues/new?title=HOLD" style="color:#dde34c;">click here</a> and press the green &ldquo;Submit new issue&rdquo; button on the page that opens &mdash; that posts a stop signal the sender checks first. (Or just tell Ted.)</div>
+  <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today}{" &middot; a day late: the first Monday was a holiday, so the send moves to Wednesday" if args.deferred else ""} &middot; NYPD data through {week_end} ({age} days old) &middot; Nothing to do if this looks right &mdash; it sends tomorrow on its own. To STOP it: <a href="https://github.com/Vital-City-NYC/compstat-decoder/issues/new?title=HOLD" style="color:#dde34c;">click here</a> and press the green &ldquo;Submit new issue&rdquo; button on the page that opens &mdash; that posts a stop signal the sender checks first. (Or just tell Ted.)</div>
 </div>
 <div style="padding:20px 28px;">
   <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding-bottom:6px;">Checks</div>

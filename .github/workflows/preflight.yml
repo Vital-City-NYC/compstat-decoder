@@ -1,18 +1,32 @@
 name: Pre-flight digest
 
-# Monday afternoon, after the noon data scrape: render every subscribed district's
-# email from the fresh data, run the smell tests, and email the digest to the
-# internal reviewers. Scheduled runs only proceed on the FIRST Monday of the month
-# (the monthly cycle); a manual run proceeds always.
+# The review half of the email cycle. Runs Monday AND Tuesday afternoons; the gate
+# decides which one is live:
+#   - first Monday of the month, week ending Sunday is being served -> normal cycle
+#     (digest today, send tomorrow)
+#   - first Monday, but the NYPD has not posted the week yet (Labor Day is always the
+#     first Monday of September; Jan 1 / Jul 4 sometimes; or they are just late) ->
+#     mail a short "sliding a day" note, then run for real on Tuesday with the send
+#     following on Wednesday
+#   - any other day -> nothing
+# After mailing a digest it commits data/cycle_state.json, which is how the sender
+# knows a digest went out yesterday and which week of data the reviewers saw.
+# A manual run always proceeds and records state the same way.
 
 on:
   schedule:
-    - cron: '0 19 * * 1'   # Mondays 3pm ET / 2pm EST, an hour after the scrape lands
+    - cron: '0 19 * * 1,2'   # Mon + Tue, 3pm ET / 2pm EST; the gate picks the live day
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   issues: write
+
+concurrency:
+  # Share the data job's lock so we never render mid-update, and so our state commit
+  # never races its data commit.
+  group: compstat-update
+  cancel-in-progress: false
 
 jobs:
   preflight:
@@ -20,35 +34,93 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Only the first Monday of the month (scheduled runs)
-        if: github.event_name == 'schedule'
-        run: |
-          if [ "$(date -u +%d)" -gt 7 ]; then
-            echo "Not the first Monday — nothing to do."
-            echo "SKIP=1" >> "$GITHUB_ENV"
-          fi
-
       - uses: actions/setup-python@v5
-        if: env.SKIP != '1'
         with:
           python-version: '3.11'
 
-      - name: Render, vet, and build the digest from the live audience
-        if: env.SKIP != '1'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # The hourly poll is "hourly" only nominally — GitHub fires it every 2–6 hours in
+      # practice — so a week the NYPD posted at 12:40 may not be in the repo at 3pm.
+      # Catch up here, under the same lock the data job uses, so the gate and the
+      # digest both see what the NYPD actually has right now.
+      - name: Ask both NYPD sources what they have
+        id: probe
+        run: python3 scripts/probe_sources.py --interval-hours 1
+
+      - name: Catch up if a source has a week we are not serving
+        if: steps.probe.outputs.behind == '1'
+        run: |
+          python3 scripts/scrape_compstat.py
+          python3 scripts/archive_weekly_series.py
+          python3 scripts/build_context.py
+          python3 scripts/probe_sources.py --interval-hours 1
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then echo "Nothing changed."; else
+            git commit -m "CompStat update ($(date -u +'%Y-%m-%d %H:%MZ'), pre-flight catch-up)"
+            git pull --rebase --autostash
+            git push
+          fi
+
+      - name: Decide whether today is a cycle day (scheduled runs)
+        if: github.event_name == 'schedule'
+        run: |
+          python3 scripts/cycle_gate.py preflight | tee -a "$GITHUB_ENV"
+
+      - name: Manual runs always proceed
+        if: github.event_name != 'schedule'
+        run: |
+          echo "ACTION=run" >> "$GITHUB_ENV"
+          echo "CYCLE_DAY=1" >> "$GITHUB_ENV"
+
+      - name: Nothing to do today
+        if: env.ACTION == 'skip'
+        run: echo "Skip — $WHY"
+
+      - name: Tell the reviewers the cycle slides a day
+        if: env.ACTION == 'defer'
         env:
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
         run: |
-          M=$(date -u +%m)
+          echo "Defer — $WHY"
+          python3 scripts/cycle_gate.py defer-notice
+          python3 scripts/send_digest.py \
+            --recipients talcorn@vitalcitynyc.org aesguerra@vitalcitynyc.org \
+            --subject "Pre-flight: this month's update slides a day (NYPD has not posted)" \
+            --preview "Nothing to do. Digest tomorrow, send the day after."
+
+      - name: Render, vet, and build the digest from the live audience
+        if: env.ACTION == 'run'
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: |
+          M=$(TZ=America/New_York date +%m)
           CADS="monthly"; case "$M" in 01|04|07|10) CADS="monthly quarterly";; esac
-          python3 scripts/preflight.py --subscribers mailchimp --cadence $CADS
+          echo "CADS=$CADS" >> "$GITHUB_ENV"
+          DEF=""; [ "$CYCLE_DAY" = "2" ] && DEF="--deferred"
+          python3 scripts/preflight.py --subscribers mailchimp --cadence $CADS $DEF
 
       - name: Email the digest to the reviewers
-        if: env.SKIP != '1'
+        if: env.ACTION == 'run'
         env:
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
         run: |
           python3 scripts/send_digest.py \
             --recipients talcorn@vitalcitynyc.org aesguerra@vitalcitynyc.org
+
+      - name: Record that a digest went out, and on which week of data
+        if: env.ACTION == 'run'
+        run: |
+          python3 scripts/cycle_gate.py record --cadence $CADS --cycle-day "$CYCLE_DAY"
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cycle_state.json
+          git commit -m "Pre-flight mailed $(TZ=America/New_York date +%Y-%m-%d), cycle day $CYCLE_DAY"
+          git pull --rebase --autostash
+          git push
 
       - name: File an alarm issue on failure
         if: failure()

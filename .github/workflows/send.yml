@@ -1,12 +1,15 @@
 name: Send district emails
 
-# Tuesday after the first Monday: the send half of the email cycle. Pre-flight went
-# out the day before; this proceeds unless an open issue titled HOLD exists.
-# Manual dispatch runs any time (used for beta cycles).
+# The send half of the email cycle. Runs Tuesday AND Wednesday at noon ET; the gate
+# lets it through only on the day AFTER the pre-flight digest was actually mailed
+# (Tuesday in a normal month, Wednesday when a holiday Monday slid the cycle), and
+# only if the data still ends on the week the reviewers saw. An open issue titled
+# HOLD stops it. Manual dispatch runs any time (used for beta cycles) and skips the
+# pre-flight handshake.
 
 on:
   schedule:
-    - cron: '0 16 * * 2'   # Tuesdays noon ET; the job gates itself to the day after the first Monday
+    - cron: '0 16 * * 2,3'   # Tue + Wed noon ET; the gate picks the live day
   workflow_dispatch:
     inputs:
       cadence:
@@ -23,32 +26,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Only the Tuesday after the first Monday (scheduled runs)
-        if: github.event_name == 'schedule'
-        run: |
-          if [ "$(date -u +%d)" -lt 2 ] || [ "$(date -u +%d)" -gt 8 ]; then
-            echo "Not the cycle Tuesday — nothing to do."
-            echo "SKIP=1" >> "$GITHUB_ENV"
-          fi
-
       - uses: actions/setup-python@v5
-        if: env.SKIP != '1'
         with:
           python-version: '3.11'
 
+      - name: Only the day after a digest was mailed (scheduled runs)
+        if: github.event_name == 'schedule'
+        run: |
+          python3 scripts/cycle_gate.py send | tee -a "$GITHUB_ENV"
+          echo "GUARD=--require-preflight" >> "$GITHUB_ENV"
+
+      - name: Manual runs always proceed
+        if: github.event_name != 'schedule'
+        run: echo "ACTION=run" >> "$GITHUB_ENV"
+
+      - name: Nothing to do today
+        if: env.ACTION != 'run'
+        run: echo "Skip — $WHY"
+
       - name: Send the monthly cycle
-        if: env.SKIP != '1'
+        if: env.ACTION == 'run'
         env:
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-        run: python3 scripts/send_cycle.py --cadence ${{ inputs.cadence || 'monthly' }}
+        run: python3 scripts/send_cycle.py --cadence ${{ inputs.cadence || 'monthly' }} $GUARD
 
       - name: Also the quarterly cycle, in quarter months
-        if: env.SKIP != '1' && github.event_name == 'schedule'
+        if: env.ACTION == 'run' && github.event_name == 'schedule'
         env:
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
         run: |
-          M=$(date -u +%m)
-          case "$M" in 01|04|07|10) python3 scripts/send_cycle.py --cadence quarterly ;; *) echo "not a quarter month" ;; esac
+          M=$(TZ=America/New_York date +%m)
+          case "$M" in 01|04|07|10) python3 scripts/send_cycle.py --cadence quarterly $GUARD ;; *) echo "not a quarter month" ;; esac
 
       - name: File an alarm issue on failure
         if: failure()

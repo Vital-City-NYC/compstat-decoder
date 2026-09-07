@@ -53,6 +53,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cadence", required=True, choices=["monthly", "quarterly"])
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--require-preflight", action="store_true",
+                    help="refuse unless data/cycle_state.json shows a digest was mailed this cycle "
+                         "on the same week of data (scheduled runs pass this; manual runs may not)")
     args = ap.parse_args()
     key = os.environ.get("MAILCHIMP_API_KEY") or (ROOT / ".mailchimp_key").read_text().strip()
 
@@ -74,6 +77,21 @@ def main():
         return
 
     data = json.load(open(ROOT / "data/latest_compstat.json"))
+    if args.require_preflight:
+        # The reviewers vetted one specific week. If the hourly poll has since pulled in
+        # a newer one (a late NYPD post landing between digest and send), these numbers
+        # were never seen by anyone — stop and alarm rather than send them blind.
+        state_path = ROOT / "data/cycle_state.json"
+        if not state_path.exists():
+            sys.exit("no cycle_state.json — no digest was mailed; refusing to send unreviewed emails")
+        state = json.load(open(state_path))
+        served = datetime.strptime(data["citywide"]["report_period"]["week_end"], "%m/%d/%Y").date().isoformat()
+        if served != state.get("data_week_end"):
+            sys.exit(f"data changed since the pre-flight: reviewers saw the week ending "
+                     f"{state.get('data_week_end')}, the feed now ends {served} — refusing to send "
+                     f"unreviewed numbers. Re-run the pre-flight, then dispatch the send by hand.")
+        if args.cadence not in state.get("cadences", []):
+            sys.exit(f"the pre-flight covered {state.get('cadences')}, not {args.cadence} — refusing")
     council = load_council()
     hoods = neighborhoods()
     template = (ROOT / "scripts/email_template.html").read_text()
