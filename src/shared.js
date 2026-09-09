@@ -456,6 +456,13 @@ export const formatPeriodDateFull = (iso) => {
 
 export const VOLATILITY_LABEL = 'Caution about interpreting year-to-date trends:';
 
+// WEIGHTED-AVG HIDDEN 2026-09-09 (Ted's call): with no district-level weighted average
+// published, the district caution can no longer quote "this district's weighted average has
+// ranged from X to Y". Until the weighted average returns, every district gets this one
+// generic sentence instead of a customized range. Restore by switching CouncilDistricts.js
+// back to volatilitySentence(districtVolatility, 'district').
+export const DISTRICT_VOLATILITY_GENERIC = "Year-to-date changes move as the year fills in. Early in the calendar year the measure covers only a few weeks, so a handful of incidents swings a precinct's percentage hard; it steadies as the year advances.";
+
 export const volatilitySentence = (v, noun = 'precinct') => {
   const measure = noun === 'district' ? 'year-to-date weighted average' : 'year-to-date change';
   // Too few weeks into a new year to quote a range — say why the number is unsteady

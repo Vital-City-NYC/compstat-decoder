@@ -9,7 +9,7 @@ import {
   PRECINCT_NEIGHBORHOODS, MAJOR_VIOLENT, MAJOR_PROPERTY, VOLATILITY_THRESHOLD,
   safeNum, pctColor, dirPct, signedCount, expandCrime,
   toOrdinalPrecinct, SearchIcon, ChevronDown, Download,
-  ytdVolatility, volatilitySentence, VOLATILITY_LABEL, useSettled } from '../shared';
+  ytdVolatility, VOLATILITY_LABEL, DISTRICT_VOLATILITY_GENERIC, useSettled } from '../shared'; // WEIGHTED-AVG HIDDEN: re-import volatilitySentence to restore the customized caution
 
 const MAJORS = ['Murder', 'Rape', 'Robbery', 'Fel. Assault', 'Burglary', 'Gr. Larceny', 'G.L.A.'];
 
@@ -649,6 +649,8 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
   // How much this district's weighted year-to-date figure has itself moved across the
   // snapshot archive. Districts run steadier than their precincts — pooling several
   // precincts enlarges the sample — but the range is still worth stating.
+  // WEIGHTED-AVG HIDDEN 2026-09-09: still computed, unused until the customized caution returns.
+  // eslint-disable-next-line no-unused-vars
   const districtVolatility = activeTab === 'r52'
     ? null
     : ytdVolatility(contextData, String(districtNum), 'council');
@@ -739,14 +741,17 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
                 <span>{renderFinding(b)}</span>
               </li>
             ))}
-            {/* Same caveat the Headlines page carries, computed on the district's own weighted
-                figure rather than any single precinct's. Set off in amber so it reads as a note
-                about the measure, not another finding. */}
-            {districtVolatility && (
+            {/* Same caveat the Headlines page carries. Set off in amber so it reads as a note
+                about the measure, not another finding.
+                WEIGHTED-AVG HIDDEN 2026-09-09 (Ted's call): this used to quote the district's own
+                weighted-average range; with that figure unpublished the sentence is generic and
+                identical for every district. Restore by swapping the two lines marked below. */}
+            {activeTab !== 'r52' && (
               <li className="text-[15px] leading-relaxed text-gray-700 rounded-sm px-3 py-2 mt-1"
                   style={{ backgroundColor: 'rgba(221, 228, 76, 0.30)' }}>
                 <strong className="font-black">{VOLATILITY_LABEL}</strong>{' '}
-                {volatilitySentence(districtVolatility, 'district')}
+                {DISTRICT_VOLATILITY_GENERIC}
+                {/* {volatilitySentence(districtVolatility, 'district')}  <- WEIGHTED-AVG HIDDEN: restore this, drop the line above */}
               </li>
             )}
           </ul>
@@ -968,7 +973,11 @@ export default function CouncilDistricts({ rawData, activeTab, districtNum, setD
           </div>
         </div>
         <div className="mt-3 pt-2 border-t border-gray-300 flex justify-between gap-4 text-[8px] text-gray-400 flex-shrink-0" style={{ fontFamily: 'system-ui, sans-serif' }}>
-          <span>Sources: NYPD CompStat weekly report; NYC Open Data (complaint &amp; shooting data). Precinct figures are weighted by each precinct's share of the district — a crude approximation, since precincts extend beyond district lines.</span>
+          {/* WEIGHTED-AVG HIDDEN 2026-09-09: the printable report no longer carries a weighted row, so
+              its footer stops describing one. Original sentence, to restore with the row:
+              "Precinct figures are weighted by each precinct's share of the district — a crude
+              approximation, since precincts extend beyond district lines." */}
+          <span>Sources: NYPD CompStat weekly report; NYC Open Data (complaint &amp; shooting data). Figures are for each precinct as a whole; precincts extend beyond district lines.</span>
           <span className="whitespace-nowrap">Published by Vital City · vitalcitynyc.org</span>
         </div>
       </div>
