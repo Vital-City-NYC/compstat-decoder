@@ -9,6 +9,7 @@ import {
 import vcLogo from './vitalcity-logo.png';
 import NEIGHBORHOODS from './data/neighborhoods.json';
 import HistoricView from './HistoricView';
+import SubscribeView from './SubscribeView';
 import Headlines from './tabs/Headlines';
 import CrimeNumbers from './tabs/CrimeNumbers';
 import ByPrecinct from './tabs/ByPrecinct';
@@ -448,6 +449,13 @@ export default function App() {
   }
 
   // ==========================================
+  // SUBSCRIBE VIEW (?view=subscribe) — a shareable signup page
+  // ==========================================
+  if (appView === 'subscribe') {
+    return <SubscribeView embed={EMBED} onBack={() => setAppView('live')} />;
+  }
+
+  // ==========================================
   // LIVE COMPSTAT DASHBOARD
   // ==========================================
   return (
@@ -564,6 +572,10 @@ export default function App() {
               <button onClick={() => setActiveTab('ytd')} aria-pressed={activeTab === 'ytd'} title="Year-to-date vs the same period last year" className={`px-1.5 sm:px-2 py-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wide transition-colors ${activeTab === 'ytd' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>YTD</button>
               <button onClick={() => !rollingOff && setActiveTab('r52')} disabled={rollingOff} aria-pressed={activeTab === 'r52'} title={rollingOff ? 'The rolling window is not available on this view' : 'The last 52 weeks vs the 52 weeks before them — a window that never changes length'} className={`px-1.5 sm:px-2 py-1.5 text-[10px] sm:text-[11px] font-black uppercase tracking-wide transition-colors ${rollingOff ? 'bg-gray-50 text-gray-300 cursor-not-allowed' : activeTab === 'r52' ? 'bg-gray-900 text-white' : 'bg-white text-gray-500 hover:text-black'}`}>Past year</button>
             </div>
+            <button onClick={() => setAppView('subscribe')} title="Get a monthly or quarterly email on crime trends in your district or precinct"
+              className="text-[10px] font-black uppercase tracking-widest text-black bg-[#dde44c] hover:bg-[#d2d940] px-2.5 py-[7px] rounded-sm flex-shrink-0 whitespace-nowrap transition-colors">
+              Get updates
+            </button>
             <button onClick={copyLink} title="Copy a link to exactly this view — geography and time window included" className="text-[11px] font-bold text-gray-400 hover:text-black transition-colors flex items-center gap-1 flex-shrink-0 whitespace-nowrap">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
               <span className={linkCopied ? '' : 'hidden sm:inline'}>{linkCopied ? 'Copied \u2713' : 'Copy link'}</span>

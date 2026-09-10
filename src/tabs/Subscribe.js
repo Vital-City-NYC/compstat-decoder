@@ -96,11 +96,18 @@ const mcSubscribe = ({ email, district, precinct, cadence, vcNews }) => new Prom
 const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
   const n = district.district;
   const dir = (v) => (typeof v === 'number' ? (v > 0 ? 'up' : v < 0 ? 'down' : 'flat') : null);
-  const headline = f.districtAll.pct != null
-    ? `Crime is ${dir(f.districtAll.pct)} ${Math.abs(f.districtAll.pct).toFixed(1)}% this year in your district`
+  // WEIGHTED-AVG HIDDEN 2026-09-10: the preview used to open with the district's weighted
+  // percentage ("Crime is down 4.2% this year in your district"). The real email leads with
+  // the precinct count, so the preview now does too. Original, to restore with the row below:
+  //   const headline = f.districtAll.pct != null
+  //     ? `Crime is ${dir(f.districtAll.pct)} ${Math.abs(f.districtAll.pct).toFixed(1)}% this year in your district`
+  //     : `How crime is changing in your district`;
+  const headline = f.upCount + f.downCount > 0
+    ? `Year-to-date, crime is ${f.downShare >= f.upShare ? 'down' : 'up'} in ${f.downShare >= f.upShare ? f.downCount : f.upCount} of the ${f.nP} precincts in your council district.`
     : `How crime is changing in your district`;
   const subject = `Crime in Council District ${n}: your ${cadence.toLowerCase()} update`;
 
+  // eslint-disable-next-line no-unused-vars -- kept for the WEIGHTED-AVG HIDDEN stat row
   const statCell = (label, t) => (
     <div className="flex-1 min-w-[90px]">
       <div className="text-[9px] font-black uppercase tracking-widest text-gray-500">{label}</div>
@@ -134,18 +141,19 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
           Council District {n}{district.member ? ` · Council Member ${district.member}` : ''} · CompStat data through {formatPeriodDate(period?.week_end) || period?.week_end || '—'}
         </p>
 
+        {/* WEIGHTED-AVG HIDDEN 2026-09-10 (Liz's call, 2026-08-28): the district-level stat row.
+            Restore by un-commenting; statCell is kept above for it.
         <div className="flex gap-4 flex-wrap border-y border-gray-200 py-3 mb-4">
           {statCell('All major crime', f.districtAll)}
           {statCell('Violent', f.districtVio)}
           {statCell('Property', f.districtProp)}
         </div>
+        */}
 
         <div className="text-[14px] leading-relaxed text-gray-700 space-y-2 mb-5" style={{ fontFamily: 'Georgia, serif' }}>
           {f.upCount + f.downCount > 0 && (
             <p>
-              Crime is {f.downShare >= f.upShare ? 'down' : 'up'} in{' '}
-              {f.downShare >= f.upShare ? f.downCount : f.upCount} of the {f.nP} precincts that make up the
-              district, compared with the same period last year. Citywide, major crime is{' '}
+              All comparisons are with the same period last year. Citywide, major crime is{' '}
               {dir(f.cwAll.pct)} {typeof f.cwAll.pct === 'number' ? Math.abs(f.cwAll.pct).toFixed(1) + '%' : ''}.
             </p>
           )}
@@ -200,7 +208,10 @@ const EmailPreview = ({ email, cadence, district, f, rows, period }) => {
 /* ------------------------------------------------------------------ */
 /* The signup band itself                                              */
 /* ------------------------------------------------------------------ */
-export default function SubscribeBand({ district, districts, f, rows, period, compact = false, standalone = false }) {
+// geoFirst (the ?view=subscribe page): ask for the address / district BEFORE the email,
+// so the page's one job reads top to bottom. Everywhere else the band keeps its
+// email-first flow and asks for the district after signup.
+export default function SubscribeBand({ district, districts, f, rows, period, compact = false, standalone = false, geoFirst = false }) {
   const [email, setEmail] = useState('');
   const [cadence, setCadence] = useState('Quarterly');
   const [chosenDistrict, setChosenDistrict] = useState(null); // null = follow the district being viewed
@@ -303,7 +314,7 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
     if (precinctMode && !chosenPrecinct) return;          // the picker is still waiting on a choice
     if (!precinctMode && !standalone && !effective) return;
     // A chosen precinct is a complete signup on its own — no district step needed.
-    if (standalone && !(precinctMode && chosenPrecinct)) { setSignedUp(true); return; }
+    if (standalone && !geoFirst && !(precinctMode && chosenPrecinct)) { setSignedUp(true); return; }
     finalize(effective ? effective.district : null).then(() => setSignedUp(true)).catch(() => {});
   };
 
@@ -317,7 +328,9 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
           : districts;
         const pick = (d) => {
           setChosenDistrict(d); setAddressMode(false); setAddress(''); setPickerOpen(false);
-          finalize(d.district).catch(() => {});
+          // Post-signup the pick completes the subscription; pre-signup (geoFirst) the
+          // Sign up button does, with the district already chosen.
+          if (signedUp) finalize(d.district).catch(() => {});
         };
         return (
           <div className="mb-4 max-w-md relative">
@@ -418,6 +431,9 @@ export default function SubscribeBand({ district, districts, f, rows, period, co
           </span>
         )}
       </div>
+
+      {/* Geography first (the standalone signup page): address or district picker up top */}
+      {geoFirst && !chosenDistrict && !precinctMode && districtPicker()}
 
       {/* Address lookup, shown only when requested (council-tab band) */}
       {addressMode && !standalone && (
