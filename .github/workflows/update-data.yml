@@ -128,7 +128,7 @@ jobs:
             echo "Already noticed; not filing again."
           else
             gh issue create -R "$GITHUB_REPOSITORY" --title "$TITLE" --body "$(cat <<BODY
-          @tedalcorn Not a failure and nothing to fix here — the pipeline is healthy and
+          @joshgreenman1973 Not a failure and nothing to fix here — the pipeline is healthy and
           in sync. The NYPD simply has not posted a new week since ${{ steps.probe.outputs.newest }},
           which is longer than a holiday would explain.
 
@@ -152,7 +152,7 @@ jobs:
             exit 0
           fi
           gh issue create -R "$GITHUB_REPOSITORY" --title "$TITLE" --body "$(cat <<BODY
-          @tedalcorn The CompStat update failed. Until this is fixed the site serves
+          @joshgreenman1973 The CompStat update failed. Until this is fixed the site serves
           whatever it last committed.
 
           Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID

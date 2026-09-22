@@ -65,4 +65,4 @@ jobs:
         run: |
           gh issue create -R "$GITHUB_REPOSITORY" \
             --title "ALARM: district email send failed $(date -u +%Y-%m-%d)" \
-            --body "@tedalcorn The send job failed — subscribers may have received some, all, or none of this cycle. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
+            --body "@joshgreenman1973 The send job failed — subscribers may have received some, all, or none of this cycle. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true

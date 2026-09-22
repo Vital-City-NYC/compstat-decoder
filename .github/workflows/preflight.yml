@@ -88,7 +88,7 @@ jobs:
           echo "Defer — $WHY"
           python3 scripts/cycle_gate.py defer-notice
           python3 scripts/send_digest.py \
-            --recipients talcorn@vitalcitynyc.org aesguerra@vitalcitynyc.org \
+            --recipients jgreenman@vitalcitynyc.org aesguerra@vitalcitynyc.org \
             --subject "Pre-flight: this month's update slides a day (NYPD has not posted)" \
             --preview "Nothing to do. Digest tomorrow, send the day after."
 
@@ -109,7 +109,7 @@ jobs:
           MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
         run: |
           python3 scripts/send_digest.py \
-            --recipients talcorn@vitalcitynyc.org aesguerra@vitalcitynyc.org
+            --recipients jgreenman@vitalcitynyc.org aesguerra@vitalcitynyc.org
 
       - name: Record that a digest went out, and on which week of data
         if: env.ACTION == 'run'
@@ -129,4 +129,4 @@ jobs:
         run: |
           gh issue create -R "$GITHUB_REPOSITORY" \
             --title "ALARM: pre-flight digest failed $(date -u +%Y-%m-%d)" \
-            --body "@tedalcorn The pre-flight digest job failed — the reviewers did not get this cycle's report. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true
+            --body "@joshgreenman1973 The pre-flight digest job failed — the reviewers did not get this cycle's report. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" || true

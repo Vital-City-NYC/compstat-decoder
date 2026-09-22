@@ -7,8 +7,8 @@ that tag from every subscriber count). The district emails themselves are inline
 below the digest (capped, so a big cycle doesn't produce a monster email).
 
 Usage:
-  python3 scripts/send_digest.py --recipients talcorn@vitalcitynyc.org aesguerra@vitalcitynyc.org
-  python3 scripts/send_digest.py --recipients talcorn@vitalcitynyc.org   # test to one person
+  python3 scripts/send_digest.py --recipients jgreenman@vitalcitynyc.org aesguerra@vitalcitynyc.org
+  python3 scripts/send_digest.py --recipients jgreenman@vitalcitynyc.org   # test to one person
 
 Requires MAILCHIMP_API_KEY in the environment (GitHub secret) or .mailchimp_key
 locally. Exits nonzero on any failure so the workflow's alarm step fires.

@@ -333,7 +333,7 @@ def main():
 <div style="background:#000;color:#fff;padding:22px 28px;">
   <div style="font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:#dde34c;">CompStat Decoder &middot; pre-flight</div>
   <div style="font-size:21px;font-weight:800;padding-top:6px;">{headline}</div>
-  <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today}{" &middot; a day late: the first Monday was a holiday, so the send moves to Wednesday" if args.deferred else ""} &middot; NYPD data through {week_end} ({age} days old) &middot; Nothing to do if this looks right &mdash; it sends tomorrow on its own. To STOP it: <a href="https://github.com/Vital-City-NYC/compstat-decoder/issues/new?title=HOLD" style="color:#dde34c;">click here</a> and press the green &ldquo;Submit new issue&rdquo; button on the page that opens &mdash; that posts a stop signal the sender checks first. (Or just tell Ted.)</div>
+  <div style="font-size:12px;color:#d1d5db;padding-top:8px;">Prepared {today}{" &middot; a day late: the first Monday was a holiday, so the send moves to Wednesday" if args.deferred else ""} &middot; NYPD data through {week_end} ({age} days old) &middot; Nothing to do if this looks right &mdash; it sends tomorrow on its own. To STOP it: <a href="https://github.com/Vital-City-NYC/compstat-decoder/issues/new?title=HOLD" style="color:#dde34c;">click here</a> and press the green &ldquo;Submit new issue&rdquo; button on the page that opens &mdash; that posts a stop signal the sender checks first. (Or just tell Josh.)</div>
 </div>
 <div style="padding:20px 28px;">
   <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:#9ca3af;padding-bottom:6px;">Checks</div>
