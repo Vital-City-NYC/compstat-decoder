@@ -112,6 +112,14 @@ jobs:
             git push
           fi
 
+      # Decoder signups who ticked "also send me the Vital City newsletter" get added to the
+      # newsletter audience. Never blocks the data job.
+      - name: Add newsletter opt-ins to the newsletter audience
+        continue-on-error: true
+        env:
+          MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+        run: python3 scripts/sync_newsletter.py
+
       - name: Fail if we are behind the NYPD
         run: python3 scripts/check_freshness.py
 
