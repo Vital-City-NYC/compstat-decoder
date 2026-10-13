@@ -51,3 +51,5 @@
 {"t":"2026-10-10T08:35:40Z","wb_avail":"2026-10-04","wb_published":"2026-10-05T17:57:46Z","wb_served":"2026-10-04","api_avail":"2026-10-04","api_served":"2026-10-04","probe_h":1.0,"why":"heartbeat"}
 {"t":"2026-10-11T13:00:00Z","wb_avail":"2026-10-04","wb_published":"2026-10-05T17:57:46Z","wb_served":"2026-10-04","api_avail":"2026-10-04","api_served":"2026-10-04","probe_h":1.0,"why":"heartbeat"}
 {"t":"2026-10-12T19:50:45Z","wb_avail":"2026-10-04","wb_published":"2026-10-05T17:57:46Z","wb_served":"2026-10-04","api_avail":"2026-10-04","api_served":"2026-10-04","probe_h":1.0,"why":"heartbeat"}
+{"t":"2026-10-13T17:38:01Z","wb_avail":"2026-10-11","wb_published":"2026-10-13T15:48:06Z","wb_served":"2026-10-04","api_avail":"2026-10-04","api_served":"2026-10-04","probe_h":1.0,"why":"change"}
+{"t":"2026-10-13T17:39:27Z","wb_avail":"2026-10-11","wb_published":"2026-10-13T15:48:06Z","wb_served":"2026-10-11","api_avail":"2026-10-04","api_served":"2026-10-04","probe_h":1.0,"why":"change"}
