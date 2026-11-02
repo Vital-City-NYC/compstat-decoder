@@ -1,10 +1,9 @@
 {
-  "cycle": "2026-10",
-  "preflight_mailed": "2026-10-05",
+  "cycle": "2026-11",
+  "preflight_mailed": "2026-11-02",
   "cycle_day": 1,
-  "data_week_end": "2026-10-04",
+  "data_week_end": "2026-11-01",
   "cadences": [
-    "monthly",
-    "quarterly"
+    "monthly"
   ]
 }
